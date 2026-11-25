@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, nextSequenceNumber, postJournalEntry, type JournalLineInput } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import {
+  BILL_LINE_MONEY_FIELDS,
+  fromMinor,
+  INVOICE_MONEY_FIELDS,
+  mulMinor,
+  percentOfMinor,
+  toMinor,
+  withMajorMoney,
+} from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -25,8 +34,10 @@ export async function GET(request: Request) {
 
   const linesStmt = db.prepare("SELECT * FROM bill_lines WHERE bill_id = ? ORDER BY id ASC");
   const hydrated = bills.map((b) => ({
-    ...b,
-    lines: linesStmt.all(b.id as number),
+    ...withMajorMoney(b, INVOICE_MONEY_FIELDS),
+    lines: (linesStmt.all(b.id as number) as Array<Record<string, unknown>>).map((line) =>
+      withMajorMoney(line, BILL_LINE_MONEY_FIELDS)
+    ),
   }));
 
   return NextResponse.json({ bills: hydrated });
@@ -74,17 +85,24 @@ export async function POST(request: Request) {
       exchangeRate = currencyCode === company.base_currency ? 1 : rateRow?.rate_to_base ?? 1;
     }
 
-    const subtotal = Number(body.lines.reduce((s, l) => s + Number(l.quantity) * Number(l.unit_cost), 0).toFixed(2));
+    let subtotalMinor = 0;
+    const pricedLines = body.lines.map((line) => {
+      const quantity = Number(line.quantity);
+      const unitMinor = toMinor(line.unit_cost);
+      const lineMinor = mulMinor(unitMinor, quantity);
+      subtotalMinor += lineMinor;
+      return { ...line, quantity, unitMinor, lineMinor };
+    });
     const vatRate = Number(body.vat_rate ?? company.default_vat_rate);
     const whtRate = Number(body.wht_rate ?? company.default_wht_rate);
-    const vatAmount = Number(((subtotal * vatRate) / 100).toFixed(2));
-    const whtAmount = Number(((subtotal * whtRate) / 100).toFixed(2));
-    const netPayable = Number((subtotal + vatAmount - whtAmount).toFixed(2));
+    const vatMinor = percentOfMinor(subtotalMinor, vatRate);
+    const whtMinor = percentOfMinor(subtotalMinor, whtRate);
+    const netMinor = subtotalMinor + vatMinor - whtMinor;
 
-    const baseSub = Number((subtotal * exchangeRate).toFixed(2));
-    const baseVat = Number((vatAmount * exchangeRate).toFixed(2));
-    const baseWht = Number((whtAmount * exchangeRate).toFixed(2));
-    const baseNet = Number((baseSub + baseVat - baseWht).toFixed(2));
+    const baseSub = mulMinor(subtotalMinor, exchangeRate);
+    const baseVat = mulMinor(vatMinor, exchangeRate);
+    const baseWht = mulMinor(whtMinor, exchangeRate);
+    const baseNet = baseSub + baseVat - baseWht;
 
     const billNumber = nextSequenceNumber(companyId, "bills", "bill_number", "BILL");
     const apAcct = getAccountByCode(companyId, "2000");
@@ -92,14 +110,14 @@ export async function POST(request: Request) {
     const whtPayAcct = getAccountByCode(companyId, "2110");
 
     const jeLines: JournalLineInput[] = [
-      { account_id: Number(body.expense_account_id), description: `Bill ${billNumber} - ${vendor.name}`, debit: baseSub, credit: 0 },
-      { account_id: apAcct.id, description: `AP - ${vendor.name} (${billNumber})`, debit: 0, credit: baseNet },
+      { account_id: Number(body.expense_account_id), description: `Bill ${billNumber} - ${vendor.name}`, debit: fromMinor(baseSub), credit: 0 },
+      { account_id: apAcct.id, description: `AP - ${vendor.name} (${billNumber})`, debit: 0, credit: fromMinor(baseNet) },
     ];
     if (baseVat > 0) {
-      jeLines.push({ account_id: vatInputAcct.id, description: `Input VAT ${vatRate}% (${billNumber})`, debit: baseVat, credit: 0 });
+      jeLines.push({ account_id: vatInputAcct.id, description: `Input VAT ${vatRate}% (${billNumber})`, debit: fromMinor(baseVat), credit: 0 });
     }
     if (baseWht > 0) {
-      jeLines.push({ account_id: whtPayAcct.id, description: `WHT Payable ${whtRate}% (${billNumber})`, debit: 0, credit: baseWht });
+      jeLines.push({ account_id: whtPayAcct.id, description: `WHT Payable ${whtRate}% (${billNumber})`, debit: 0, credit: fromMinor(baseWht) });
     }
 
     const jeId = postJournalEntry({
@@ -127,12 +145,12 @@ export async function POST(request: Request) {
         currencyCode,
         exchangeRate,
         body.expense_account_id,
-        subtotal,
+        subtotalMinor,
         vatRate,
-        vatAmount,
+        vatMinor,
         whtRate,
-        whtAmount,
-        netPayable,
+        whtMinor,
+        netMinor,
         body.notes || "",
         jeId
       );
@@ -142,11 +160,11 @@ export async function POST(request: Request) {
       INSERT INTO bill_lines (bill_id, item_id, description, quantity, unit_cost, line_total)
       VALUES (?, NULL, ?, ?, ?, ?)
     `);
-    for (const l of body.lines) {
-      insLine.run(billId, l.description, Number(l.quantity), Number(l.unit_cost), Number((Number(l.quantity) * Number(l.unit_cost)).toFixed(2)));
+    for (const l of pricedLines) {
+      insLine.run(billId, l.description, l.quantity, l.unitMinor, l.lineMinor);
     }
 
-    logAudit(companyId, auth.user.id, "CREATE_BILL", "BILL", billId, `Recorded ${billNumber} from ${vendor.name} (${currencyCode} ${netPayable})`);
+    logAudit(companyId, auth.user.id, "CREATE_BILL", "BILL", billId, `Recorded ${billNumber} from ${vendor.name} (${currencyCode} ${fromMinor(netMinor)})`);
     return NextResponse.json({ id: billId, bill_number: billNumber, journal_entry_id: jeId }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });

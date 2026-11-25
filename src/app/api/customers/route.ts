@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { fromMinor, mulMinor, toMinor, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -12,20 +13,33 @@ export async function GET(request: Request) {
   const db = getDb();
 
   const customers = db
-    .prepare(`
-      SELECT
-        c.*,
-        COALESCE(SUM(CASE WHEN i.status != 'DRAFT' THEN (i.total - i.amount_paid) * i.exchange_rate ELSE 0 END), 0) AS open_balance,
-        COUNT(i.id) AS invoice_count
-      FROM customers c
-      LEFT JOIN invoices i ON i.customer_id = c.id
-      WHERE c.company_id = ?
-      GROUP BY c.id
-      ORDER BY c.name ASC
-    `)
-    .all(companyId);
+    .prepare("SELECT * FROM customers WHERE company_id = ? ORDER BY name ASC")
+    .all(companyId) as Array<Record<string, unknown>>;
+  const invoices = db
+    .prepare("SELECT customer_id, total, amount_paid, exchange_rate, status FROM invoices WHERE company_id = ?")
+    .all(companyId) as Array<{
+    customer_id: number;
+    total: number;
+    amount_paid: number;
+    exchange_rate: number;
+    status: string;
+  }>;
+  const openMinor = new Map<number, number>();
+  const invoiceCount = new Map<number, number>();
+  for (const invoice of invoices) {
+    invoiceCount.set(invoice.customer_id, (invoiceCount.get(invoice.customer_id) ?? 0) + 1);
+    if (invoice.status === "DRAFT") continue;
+    const open = mulMinor(invoice.total - invoice.amount_paid, invoice.exchange_rate);
+    openMinor.set(invoice.customer_id, (openMinor.get(invoice.customer_id) ?? 0) + open);
+  }
 
-  return NextResponse.json({ customers });
+  return NextResponse.json({
+    customers: customers.map((customer) => ({
+      ...withMajorMoney(customer, ["credit_limit"]),
+      open_balance: fromMinor(openMinor.get(Number(customer.id)) ?? 0),
+      invoice_count: invoiceCount.get(Number(customer.id)) ?? 0,
+    })),
+  });
 }
 
 export async function POST(request: Request) {
@@ -62,7 +76,7 @@ export async function POST(request: Request) {
         body.tin_number || "",
         body.address || "",
         body.currency_code || "ETB",
-        Number(body.credit_limit || 0)
+        toMinor(body.credit_limit || 0)
       );
     const id = Number(res.lastInsertRowid);
     logAudit(companyId, auth.user.id, "CREATE_CUSTOMER", "CUSTOMER", id, `Added customer ${body.name}`);

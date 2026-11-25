@@ -59,12 +59,19 @@ export function SettingsModule() {
   const [userForm, setUserForm] = useState({
     name: "",
     email: "",
-    password: "password123",
+    password: "",
     role: "accountant" as "admin" | "accountant" | "viewer",
   });
 
   const load = useCallback(async () => {
-    if (!activeCompany) return;
+    if (!activeCompany) {
+      setCompanies([]);
+      setRates([]);
+      setUsers([]);
+      setAuditLogs([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const res = await fetch(`/api/settings?companyId=${activeCompany.id}`, { cache: "no-store" });
     const data = (await res.json()) as {
@@ -148,7 +155,7 @@ export function SettingsModule() {
     }
     showToast("success", t.common.success);
     setOpenNewUser(false);
-    setUserForm({ name: "", email: "", password: "password123", role: "accountant" });
+    setUserForm({ name: "", email: "", password: "", role: "accountant" });
     void load();
   }
 

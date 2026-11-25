@@ -8,11 +8,38 @@ services:
     environment:
       NODE_ENV: production
       DATA_DIR: /app/data
-      MIZAN_SESSION_SECRET: "${MIZAN_SESSION_SECRET:-change-me-to-a-64-char-random-secret}"
-      ENABLE_DEMO_LOGIN: "${ENABLE_DEMO_LOGIN:-false}"
-      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN:-*}"
+      # No default. Compose refuses to start until this is set in the environment or .env file.
+      MIZAN_SESSION_SECRET: ${MIZAN_SESSION_SECRET:?Set MIZAN_SESSION_SECRET in .env before starting. Generate one with: openssl rand -hex 32}
+      ENABLE_DEMO_LOGIN: ${ENABLE_DEMO_LOGIN:-false}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-*}
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-}
+      INITIAL_COMPANY_NAME: ${INITIAL_COMPANY_NAME:-}
+      INITIAL_COMPANY_CURRENCY: ${INITIAL_COMPANY_CURRENCY:-ETB}
     volumes:
       - mizan_data:/app/data
 
+  # Daily consistent copy of the SQLite file. Writes only to the backup volume.
+  mizan-backup:
+    build: .
+    container_name: mizan-backup
+    restart: unless-stopped
+    depends_on:
+      - mizan-books
+    entrypoint: ["node", "scripts/backup-loop.mjs"]
+    environment:
+      DATA_DIR: /app/data
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - mizan_data:/app/data
+      - mizan_backups:/backups
+    healthcheck:
+      disable: true
+
 volumes:
   mizan_data:
+  mizan_backups:

@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
-import { calculateIncomeTax, computeFinancialStatements, getAccountByCode, postJournalEntry } from "@/lib/accounting";
+import { computeEmployeePay, computeFinancialStatements, getAccountByCode, postJournalEntry } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import {
+  EMPLOYEE_MONEY_FIELDS,
+  fromMinor,
+  minorFromSql,
+  PAYROLL_ITEM_MONEY_FIELDS,
+  PAYROLL_RUN_MONEY_FIELDS,
+  toMinor,
+  withMajorMoney,
+} from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -28,18 +37,25 @@ export async function GET(request: Request) {
     bank_account: string;
   }>;
 
-  // Preview monthly calculation per employee
   const employeesWithPreview = employees.map((e) => {
-    const gross = Number((e.base_salary + e.transport_allowance + e.housing_allowance).toFixed(2));
-    const transportExempt = company.tax_regime === "ET_STANDARD" ? Math.min(e.transport_allowance, 600) : 0;
-    const taxable = Math.max(0, gross - transportExempt);
-    const incomeTax = Number(calculateIncomeTax(taxable, company.tax_regime).toFixed(2));
-    const empPension = company.tax_regime === "ET_STANDARD" ? Number((e.base_salary * 0.07).toFixed(2)) : 0;
-    const coPension = company.tax_regime === "ET_STANDARD" ? Number((e.base_salary * 0.11).toFixed(2)) : 0;
-    const net = Number((gross - incomeTax - empPension).toFixed(2));
+    const pay = computeEmployeePay(
+      {
+        base_salary: minorFromSql(e.base_salary),
+        transport_allowance: minorFromSql(e.transport_allowance),
+        housing_allowance: minorFromSql(e.housing_allowance),
+      },
+      company.tax_regime
+    );
     return {
-      ...e,
-      preview: { gross, taxable, incomeTax, empPension, coPension, net },
+      ...withMajorMoney(e, EMPLOYEE_MONEY_FIELDS),
+      preview: {
+        gross: fromMinor(pay.gross),
+        taxable: fromMinor(pay.taxable),
+        incomeTax: fromMinor(pay.tax),
+        empPension: fromMinor(pay.empPen),
+        coPension: fromMinor(pay.coPen),
+        net: fromMinor(pay.net),
+      },
     };
   });
 
@@ -54,8 +70,10 @@ export async function GET(request: Request) {
     WHERE pi.payroll_run_id = ?
   `);
   const hydratedRuns = runs.map((r) => ({
-    ...r,
-    items: itemsStmt.all(r.id as number),
+    ...withMajorMoney(r, PAYROLL_RUN_MONEY_FIELDS),
+    items: (itemsStmt.all(r.id as number) as Array<Record<string, unknown>>).map((item) =>
+      withMajorMoney(item, PAYROLL_ITEM_MONEY_FIELDS)
+    ),
   }));
 
   const statements = computeFinancialStatements(companyId);
@@ -115,9 +133,9 @@ export async function POST(request: Request) {
           body.job_title || "",
           body.department || "General",
           body.tin_number || "",
-          Number(body.base_salary || 0),
-          Number(body.transport_allowance || 0),
-          Number(body.housing_allowance || 0),
+          toMinor(body.base_salary || 0),
+          toMinor(body.transport_allowance || 0),
+          toMinor(body.housing_allowance || 0),
           body.bank_account || ""
         );
       const id = Number(res.lastInsertRowid);
@@ -141,33 +159,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "No active employees found" }, { status: 400 });
       }
 
-      let totGross = 0;
-      let totTax = 0;
-      let totEmpPen = 0;
-      let totCoPen = 0;
-      let totNet = 0;
-
       const computed = employees.map((e) => {
-        const gross = Number((e.base_salary + e.transport_allowance + e.housing_allowance).toFixed(2));
-        const transportExempt = company.tax_regime === "ET_STANDARD" ? Math.min(e.transport_allowance, 600) : 0;
-        const taxable = Math.max(0, gross - transportExempt);
-        const tax = Number(calculateIncomeTax(taxable, company.tax_regime).toFixed(2));
-        const empPen = company.tax_regime === "ET_STANDARD" ? Number((e.base_salary * 0.07).toFixed(2)) : 0;
-        const coPen = company.tax_regime === "ET_STANDARD" ? Number((e.base_salary * 0.11).toFixed(2)) : 0;
-        const net = Number((gross - tax - empPen).toFixed(2));
-        totGross += gross;
-        totTax += tax;
-        totEmpPen += empPen;
-        totCoPen += coPen;
-        totNet += net;
-        return { employee_id: e.id, gross, taxable, tax, empPen, coPen, net };
+        const pay = computeEmployeePay(
+          {
+            base_salary: minorFromSql(e.base_salary),
+            transport_allowance: minorFromSql(e.transport_allowance),
+            housing_allowance: minorFromSql(e.housing_allowance),
+          },
+          company.tax_regime
+        );
+        return { employee_id: e.id, ...pay };
       });
 
-      totGross = Number(totGross.toFixed(2));
-      totTax = Number(totTax.toFixed(2));
-      totEmpPen = Number(totEmpPen.toFixed(2));
-      totCoPen = Number(totCoPen.toFixed(2));
-      totNet = Number(totNet.toFixed(2));
+      const totGross = computed.reduce((sum, row) => sum + row.gross, 0);
+      const totTax = computed.reduce((sum, row) => sum + row.tax, 0);
+      const totEmpPen = computed.reduce((sum, row) => sum + row.empPen, 0);
+      const totCoPen = computed.reduce((sum, row) => sum + row.coPen, 0);
+      const totNet = computed.reduce((sum, row) => sum + row.net, 0);
 
       const salAcct = getAccountByCode(companyId, "6000").id;
       const penExpAcct = getAccountByCode(companyId, "6010").id;
@@ -176,21 +184,21 @@ export async function POST(request: Request) {
       const bankAcct = getAccountByCode(companyId, "1010").id;
 
       const lines = [
-        { account_id: salAcct, description: `Gross Salaries - ${body.period_label}`, debit: totGross, credit: 0 },
-        { account_id: bankAcct, description: `Net Payroll Disbursement - ${body.period_label}`, debit: 0, credit: totNet },
+        { account_id: salAcct, description: `Gross Salaries - ${body.period_label}`, debit: fromMinor(totGross), credit: 0 },
+        { account_id: bankAcct, description: `Net Payroll Disbursement - ${body.period_label}`, debit: 0, credit: fromMinor(totNet) },
       ];
       if (totCoPen > 0) {
-        lines.push({ account_id: penExpAcct, description: `Employer Pension (11%) - ${body.period_label}`, debit: totCoPen, credit: 0 });
+        lines.push({ account_id: penExpAcct, description: `Employer Pension (11%) - ${body.period_label}`, debit: fromMinor(totCoPen), credit: 0 });
       }
       if (totTax > 0) {
-        lines.push({ account_id: payeAcct, description: `PAYE Income Tax Payable - ${body.period_label}`, debit: 0, credit: totTax });
+        lines.push({ account_id: payeAcct, description: `PAYE Income Tax Payable - ${body.period_label}`, debit: 0, credit: fromMinor(totTax) });
       }
       if (totEmpPen + totCoPen > 0) {
         lines.push({
           account_id: penPayAcct,
           description: `Pension Contributions Payable (7%+11%) - ${body.period_label}`,
           debit: 0,
-          credit: Number((totEmpPen + totCoPen).toFixed(2)),
+          credit: fromMinor(totEmpPen + totCoPen),
         });
       }
 

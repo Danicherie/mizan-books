@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, postJournalEntry } from "@/lib/accounting";
 import { getCompanyRecord, requireWrite, userHasCompanyAccess } from "@/lib/api-helpers";
+import { fromMinor, minorFromSql, mulMinor, toMinor } from "@/lib/money";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await requireWrite();
@@ -36,16 +37,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const remaining = Number((inv.total - inv.amount_paid).toFixed(2));
-    const payAmount = Number(Number(body.amount).toFixed(2));
-    if (payAmount <= 0 || payAmount > remaining + 0.05) {
-      return NextResponse.json({ error: `Payment must be between 0 and ${remaining}` }, { status: 400 });
+    const totalMinor = minorFromSql(inv.total);
+    const paidMinor = minorFromSql(inv.amount_paid);
+    const remaining = totalMinor - paidMinor;
+    const payAmount = toMinor(body.amount);
+    if (payAmount <= 0 || payAmount > remaining) {
+      return NextResponse.json({ error: `Payment must be between 0 and ${fromMinor(remaining)}` }, { status: 400 });
     }
 
     const company = getCompanyRecord(inv.company_id);
     const depositAcctId = body.account_id || getAccountByCode(inv.company_id, "1010").id;
     const arAcctId = getAccountByCode(inv.company_id, "1100").id;
-    const basePayAmount = Number((payAmount * inv.exchange_rate).toFixed(2));
+    const basePayAmount = mulMinor(payAmount, inv.exchange_rate);
 
     const jeId = postJournalEntry({
       company_id: inv.company_id,
@@ -57,17 +60,17 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       created_by: auth.user.id,
       currency_code: company.base_currency,
       lines: [
-        { account_id: depositAcctId, description: `Deposit for ${inv.invoice_number}`, debit: basePayAmount, credit: 0 },
-        { account_id: arAcctId, description: `Clear AR ${inv.invoice_number}`, debit: 0, credit: basePayAmount },
+        { account_id: depositAcctId, description: `Deposit for ${inv.invoice_number}`, debit: fromMinor(basePayAmount), credit: 0 },
+        { account_id: arAcctId, description: `Clear AR ${inv.invoice_number}`, debit: 0, credit: fromMinor(basePayAmount) },
       ],
     });
 
-    const newPaid = Number((inv.amount_paid + payAmount).toFixed(2));
-    const newStatus = newPaid >= inv.total - 0.02 ? "PAID" : "PARTIAL";
+    const newPaid = paidMinor + payAmount;
+    const newStatus = newPaid >= totalMinor ? "PAID" : "PARTIAL";
     db.prepare("UPDATE invoices SET amount_paid = ?, status = ? WHERE id = ?").run(newPaid, newStatus, inv.id);
 
-    logAudit(inv.company_id, auth.user.id, "INVOICE_PAYMENT", "INVOICE", inv.id, `Recorded payment of ${inv.currency_code} ${payAmount} on ${inv.invoice_number}`);
-    return NextResponse.json({ ok: true, status: newStatus, amount_paid: newPaid, journal_entry_id: jeId });
+    logAudit(inv.company_id, auth.user.id, "INVOICE_PAYMENT", "INVOICE", inv.id, `Recorded payment of ${inv.currency_code} ${fromMinor(payAmount)} on ${inv.invoice_number}`);
+    return NextResponse.json({ ok: true, status: newStatus, amount_paid: fromMinor(newPaid), journal_entry_id: jeId });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
   }

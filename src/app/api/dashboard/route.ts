@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { computeFinancialStatements, getAccountBalances } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { fromMinor, INVOICE_MONEY_FIELDS, INVENTORY_MONEY_FIELDS, minorFromSql, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -39,6 +40,11 @@ export async function GET(request: Request) {
       LIMIT 12
     `)
     .all(companyId) as Array<{ month: string; revenue: number; expenses: number }>;
+  const monthlySeries = monthlyRows.map((row) => ({
+    month: row.month,
+    revenue: fromMinor(minorFromSql(row.revenue)),
+    expenses: fromMinor(minorFromSql(row.expenses)),
+  }));
 
   const recentJournals = db
     .prepare(`
@@ -52,7 +58,8 @@ export async function GET(request: Request) {
       ORDER BY je.entry_date DESC, je.id DESC
       LIMIT 8
     `)
-    .all(companyId);
+    .all(companyId) as Array<Record<string, unknown>>;
+  const recent = recentJournals.map((row) => withMajorMoney(row, ["total_amount"]));
 
   const openInvoices = db
     .prepare(`
@@ -63,7 +70,8 @@ export async function GET(request: Request) {
       ORDER BY i.due_date ASC
       LIMIT 6
     `)
-    .all(companyId);
+    .all(companyId) as Array<Record<string, unknown>>;
+  const open = openInvoices.map((row) => withMajorMoney(row, INVOICE_MONEY_FIELDS));
 
   const lowStockItems = db
     .prepare(`
@@ -72,7 +80,8 @@ export async function GET(request: Request) {
       WHERE company_id = ? AND item_type = 'PRODUCT' AND quantity_on_hand <= reorder_level AND active = 1
       ORDER BY quantity_on_hand ASC
     `)
-    .all(companyId);
+    .all(companyId) as Array<Record<string, unknown>>;
+  const lowStock = lowStockItems.map((row) => withMajorMoney(row, INVENTORY_MONEY_FIELDS));
 
   return NextResponse.json({
     company,
@@ -86,9 +95,9 @@ export async function GET(request: Request) {
       netVatPayable: statements.taxSummary.netVatPayable,
       lowStockCount: lowStockItems.length,
     },
-    monthlySeries: monthlyRows,
-    recentJournals,
-    openInvoices,
-    lowStockItems,
+    monthlySeries,
+    recentJournals: recent,
+    openInvoices: open,
+    lowStockItems: lowStock,
   });
 }

@@ -21,12 +21,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV DATA_DIR=/app/data
 
-RUN mkdir -p /app/data && chown -R node:node /app
+RUN mkdir -p /app/data /backups && chown -R node:node /app /backups
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/.next ./.next
 COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/package.json ./package.json
 COPY --from=builder --chown=node:node /app/next.config.ts ./next.config.ts
+COPY --from=builder --chown=node:node /app/scripts ./scripts
 
 USER node
 EXPOSE 3000

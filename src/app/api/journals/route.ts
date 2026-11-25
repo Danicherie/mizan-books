@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { postJournalEntry } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { JOURNAL_MONEY_FIELDS, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -33,7 +34,9 @@ export async function GET(request: Request) {
 
   const hydrated = entries.map((e) => ({
     ...e,
-    lines: linesStmt.all(e.id as number),
+    lines: (linesStmt.all(e.id as number) as Array<Record<string, unknown>>).map((line) =>
+      withMajorMoney(line, JOURNAL_MONEY_FIELDS)
+    ),
   }));
 
   return NextResponse.json({ entries: hydrated });

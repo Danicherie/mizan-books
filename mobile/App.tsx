@@ -53,8 +53,8 @@ export default function App() {
   // Auth form state
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [serverInput, setServerInput] = useState("http://localhost:3000");
-  const [email, setEmail] = useState("admin@mizanbooks.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [submitting, setSubmitting] = useState(false);

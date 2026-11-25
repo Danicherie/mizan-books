@@ -3,6 +3,7 @@ import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, postJournalEntry } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId, userHasCompanyAccess } from "@/lib/api-helpers";
 import { getTodayIso } from "@/lib/calendar";
+import { fromMinor, INVENTORY_MONEY_FIELDS, minorFromSql, mulMinor, toMinor, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -13,9 +14,11 @@ export async function GET(request: Request) {
   const companyId = scoped.companyId;
   const db = getDb();
 
-  const items = db
-    .prepare("SELECT * FROM inventory_items WHERE company_id = ? AND active = 1 ORDER BY name ASC")
-    .all(companyId);
+  const items = (
+    db.prepare("SELECT * FROM inventory_items WHERE company_id = ? AND active = 1 ORDER BY name ASC").all(companyId) as Array<
+      Record<string, unknown>
+    >
+  ).map((item) => withMajorMoney(item, INVENTORY_MONEY_FIELDS));
 
   return NextResponse.json({ items });
 }
@@ -59,8 +62,8 @@ export async function POST(request: Request) {
         body.category || "General",
         body.item_type || "PRODUCT",
         body.unit || "pcs",
-        Number(body.unit_cost || 0),
-        Number(body.unit_price || 0),
+        toMinor(body.unit_cost || 0),
+        toMinor(body.unit_price || 0),
         Number(body.quantity_on_hand || 0),
         Number(body.reorder_level || 5),
         incAcct,
@@ -104,7 +107,7 @@ export async function PATCH(request: Request) {
     const newQty = Number((item.quantity_on_hand + delta).toFixed(2));
     db.prepare("UPDATE inventory_items SET quantity_on_hand = ? WHERE id = ?").run(newQty, item.id);
 
-    const valueDelta = Number(Math.abs(delta * item.unit_cost).toFixed(2));
+    const valueDelta = mulMinor(minorFromSql(item.unit_cost), Math.abs(delta));
     if (valueDelta > 0) {
       const company = getCompanyRecord(item.company_id);
       const invAcct = getAccountByCode(item.company_id, "1200").id;
@@ -121,12 +124,12 @@ export async function PATCH(request: Request) {
         lines:
           delta > 0
             ? [
-                { account_id: invAcct, description: `Stock increase ${item.sku}`, debit: valueDelta, credit: 0 },
-                { account_id: cogsAcct, description: `Inventory adjustment offset`, debit: 0, credit: valueDelta },
+                { account_id: invAcct, description: `Stock increase ${item.sku}`, debit: fromMinor(valueDelta), credit: 0 },
+                { account_id: cogsAcct, description: `Inventory adjustment offset`, debit: 0, credit: fromMinor(valueDelta) },
               ]
             : [
-                { account_id: cogsAcct, description: `Stock write-down ${item.sku}`, debit: valueDelta, credit: 0 },
-                { account_id: invAcct, description: `Inventory reduction ${item.sku}`, debit: 0, credit: valueDelta },
+                { account_id: cogsAcct, description: `Stock write-down ${item.sku}`, debit: fromMinor(valueDelta), credit: 0 },
+                { account_id: invAcct, description: `Inventory reduction ${item.sku}`, debit: 0, credit: fromMinor(valueDelta) },
               ],
       });
     }
