@@ -163,7 +163,7 @@ export function PayrollTaxModule() {
               <button
                 type="button"
                 onClick={() => setOpenEmp(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium border border-mb-line bg-mb-paper text-mb-ink hover:bg-mb-cream cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.payroll.addEmployee}</span>
@@ -171,7 +171,7 @@ export function PayrollTaxModule() {
               <button
                 type="button"
                 onClick={() => setOpenRun(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
               >
                 <Play className="w-4 h-4" />
                 <span>{t.payroll.runPayroll}</span>
@@ -194,10 +194,10 @@ export function PayrollTaxModule() {
             key={key}
             type="button"
             onClick={() => setSubTab(key)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
               subTab === key
-                ? "bg-slate-900 text-white"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                ? "bg-mb-cocoa text-mb-cream"
+                : "bg-mb-paper border border-mb-line text-mb-ink hover:bg-mb-cream"
             }`}
           >
             {label}
@@ -206,12 +206,12 @@ export function PayrollTaxModule() {
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-slate-400">{t.common.loading}</div>
+        <div className="py-16 text-center text-sm text-mb-ink/70">{t.common.loading}</div>
       ) : subTab === "employees" ? (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+              <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
                 <tr>
                   <th className="px-4 py-3 text-start">{t.payroll.employeeCode}</th>
                   <th className="px-4 py-3 text-start">{t.payroll.fullName}</th>
@@ -223,13 +223,13 @@ export function PayrollTaxModule() {
                   <th className="px-4 py-3 text-end">{t.payroll.netPay}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {employees.map((e) => (
-                  <tr key={e.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-slate-700">{e.employee_code}</td>
+                  <tr key={e.id} className="hover:bg-mb-cream/70">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-mb-ink">{e.employee_code}</td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{e.full_name}</div>
-                      <div className="text-xs text-slate-400">
+                      <div className="font-semibold text-mb-cocoa">{e.full_name}</div>
+                      <div className="text-xs text-mb-ink/70">
                         {e.job_title} · {e.department}
                       </div>
                     </td>
@@ -237,8 +237,8 @@ export function PayrollTaxModule() {
                     <td className="px-4 py-3 text-end font-semibold tabular-nums">{formatAmt(e.preview.gross)}</td>
                     <td className="px-4 py-3 text-end tabular-nums text-rose-700">{formatAmt(e.preview.incomeTax)}</td>
                     <td className="px-4 py-3 text-end tabular-nums text-amber-700">{formatAmt(e.preview.empPension)}</td>
-                    <td className="px-4 py-3 text-end tabular-nums text-slate-500">{formatAmt(e.preview.coPension)}</td>
-                    <td className="px-4 py-3 text-end font-bold tabular-nums text-emerald-700">{formatAmt(e.preview.net)}</td>
+                    <td className="px-4 py-3 text-end tabular-nums text-mb-ink">{formatAmt(e.preview.coPension)}</td>
+                    <td className="px-4 py-3 text-end font-bold tabular-nums text-mb-cocoa">{formatAmt(e.preview.net)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -248,25 +248,25 @@ export function PayrollTaxModule() {
       ) : subTab === "runs" ? (
         <div className="space-y-4">
           {runs.length === 0 ? (
-            <Card className="p-10 text-center text-sm text-slate-400">{t.common.noData}</Card>
+            <Card className="p-10 text-center text-sm text-mb-ink/70">{t.common.noData}</Card>
           ) : (
             runs.map((r) => (
               <Card key={r.id} className="overflow-hidden">
-                <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div className="px-5 py-4 bg-mb-beige border-b border-mb-line flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="font-bold text-slate-900">{r.period_label}</h3>
-                    <p className="text-xs text-slate-500">{t.payroll.payDate}: {formatDt(r.pay_date)}</p>
+                    <h3 className="font-bold text-mb-cocoa">{r.period_label}</h3>
+                    <p className="text-xs text-mb-ink">{t.payroll.payDate}: {formatDt(r.pay_date)}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-4 text-xs">
                     <span>{t.payroll.grossSalary}: <strong className="tabular-nums">{formatAmt(r.total_gross)}</strong></span>
                     <span>{t.payroll.incomeTax}: <strong className="tabular-nums text-rose-700">{formatAmt(r.total_income_tax)}</strong></span>
-                    <span>{t.payroll.netPay}: <strong className="tabular-nums text-emerald-700">{formatAmt(r.total_net)}</strong></span>
+                    <span>{t.payroll.netPay}: <strong className="tabular-nums text-mb-cocoa">{formatAmt(r.total_net)}</strong></span>
                     <StatusBadge status={r.status} label={t.common.posted} />
                   </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead className="text-slate-500 uppercase border-b border-slate-100">
+                    <thead className="text-mb-ink uppercase border-b border-mb-line/70">
                       <tr>
                         <th className="px-4 py-2 text-start">{t.payroll.fullName}</th>
                         <th className="px-4 py-2 text-end">{t.payroll.grossSalary}</th>
@@ -276,18 +276,18 @@ export function PayrollTaxModule() {
                         <th className="px-4 py-2 text-end">{t.payroll.netPay}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-mb-line/70">
                       {r.items.map((it) => (
                         <tr key={it.id}>
-                          <td className="px-4 py-2.5 font-medium text-slate-800">
-                            <span className="font-mono text-slate-400 me-2">{it.employee_code}</span>
+                          <td className="px-4 py-2.5 font-medium text-mb-cocoa">
+                            <span className="font-mono text-mb-ink/70 me-2">{it.employee_code}</span>
                             {it.full_name}
                           </td>
                           <td className="px-4 py-2.5 text-end tabular-nums">{formatAmt(it.gross_salary)}</td>
                           <td className="px-4 py-2.5 text-end tabular-nums text-rose-700">{formatAmt(it.income_tax)}</td>
                           <td className="px-4 py-2.5 text-end tabular-nums">{formatAmt(it.employee_pension)}</td>
                           <td className="px-4 py-2.5 text-end tabular-nums">{formatAmt(it.employer_pension)}</td>
-                          <td className="px-4 py-2.5 text-end font-bold tabular-nums text-emerald-700">{formatAmt(it.net_salary)}</td>
+                          <td className="px-4 py-2.5 text-end font-bold tabular-nums text-mb-cocoa">{formatAmt(it.net_salary)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -310,10 +310,10 @@ export function PayrollTaxModule() {
             </div>
             <Card className="p-5 flex items-center justify-between">
               <div>
-                <div className="text-sm font-bold text-slate-900">{t.payroll.pensionPayable}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{t.payroll.taxSummaryNote}</div>
+                <div className="text-sm font-bold text-mb-cocoa">{t.payroll.pensionPayable}</div>
+                <div className="text-xs text-mb-ink mt-0.5">{t.payroll.taxSummaryNote}</div>
               </div>
-              <div className="text-xl font-bold tabular-nums text-slate-900">{formatAmt(tax.pensionPayable)}</div>
+              <div className="text-xl font-bold tabular-nums text-mb-cocoa">{formatAmt(tax.pensionPayable)}</div>
             </Card>
           </div>
         )
@@ -324,39 +324,39 @@ export function PayrollTaxModule() {
         <form onSubmit={handleAddEmployee} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.fullName} *</label>
-              <input required value={empForm.full_name} onChange={(e) => setEmpForm({ ...empForm, full_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.fullName} *</label>
+              <input required value={empForm.full_name} onChange={(e) => setEmpForm({ ...empForm, full_name: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.jobTitle}</label>
-              <input value={empForm.job_title} onChange={(e) => setEmpForm({ ...empForm, job_title: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.jobTitle}</label>
+              <input value={empForm.job_title} onChange={(e) => setEmpForm({ ...empForm, job_title: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.department}</label>
-              <input value={empForm.department} onChange={(e) => setEmpForm({ ...empForm, department: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.department}</label>
+              <input value={empForm.department} onChange={(e) => setEmpForm({ ...empForm, department: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.baseSalary} *</label>
-              <input type="number" step="0.01" required value={empForm.base_salary} onChange={(e) => setEmpForm({ ...empForm, base_salary: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.baseSalary} *</label>
+              <input type="number" step="0.01" required value={empForm.base_salary} onChange={(e) => setEmpForm({ ...empForm, base_salary: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.transportAllowance}</label>
-              <input type="number" step="0.01" value={empForm.transport_allowance} onChange={(e) => setEmpForm({ ...empForm, transport_allowance: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.transportAllowance}</label>
+              <input type="number" step="0.01" value={empForm.transport_allowance} onChange={(e) => setEmpForm({ ...empForm, transport_allowance: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.housingAllowance}</label>
-              <input type="number" step="0.01" value={empForm.housing_allowance} onChange={(e) => setEmpForm({ ...empForm, housing_allowance: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.housingAllowance}</label>
+              <input type="number" step="0.01" value={empForm.housing_allowance} onChange={(e) => setEmpForm({ ...empForm, housing_allowance: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.bankAccount}</label>
-              <input value={empForm.bank_account} onChange={(e) => setEmpForm({ ...empForm, bank_account: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.bankAccount}</label>
+              <input value={empForm.bank_account} onChange={(e) => setEmpForm({ ...empForm, bank_account: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <button type="button" onClick={() => setOpenEmp(false)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+            <button type="button" onClick={() => setOpenEmp(false)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
               {t.common.cancel}
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+            <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
               {t.common.save}
             </button>
           </div>
@@ -367,14 +367,14 @@ export function PayrollTaxModule() {
       <Modal open={openRun} onClose={() => setOpenRun(false)} title={t.payroll.runPayroll} maxWidth="max-w-md">
         <form onSubmit={handleRunPayroll} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.periodLabel} *</label>
-            <input required value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.periodLabel} *</label>
+            <input required value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.payroll.payDate} *</label>
-            <input type="date" required value={payDate} onChange={(e) => setPayDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.payroll.payDate} *</label>
+            <input type="date" required value={payDate} onChange={(e) => setPayDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
           </div>
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
+          <div className="p-3 rounded-xl bg-mb-cream border border-mb-line text-xs space-y-1">
             <div className="flex justify-between">
               <span>{t.payroll.employeesTab}:</span>
               <strong>{employees.length}</strong>
@@ -385,14 +385,14 @@ export function PayrollTaxModule() {
             </div>
             <div className="flex justify-between">
               <span>{t.payroll.netPay}:</span>
-              <strong className="tabular-nums text-emerald-800">{formatAmt(employees.reduce((s, e) => s + e.preview.net, 0))}</strong>
+              <strong className="tabular-nums text-mb-cocoa">{formatAmt(employees.reduce((s, e) => s + e.preview.net, 0))}</strong>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <button type="button" onClick={() => setOpenRun(false)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+            <button type="button" onClick={() => setOpenRun(false)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
               {t.common.cancel}
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+            <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
               {t.common.confirm}
             </button>
           </div>

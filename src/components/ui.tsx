@@ -13,10 +13,10 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-        {subtitle && <p className="text-sm text-slate-500 mt-1">{subtitle}</p>}
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-mb-cocoa">{title}</h1>
+        {subtitle && <p className="text-sm text-mb-ink mt-1.5 leading-relaxed">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2 no-print">{actions}</div>}
     </div>
@@ -31,7 +31,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white rounded-xl border border-slate-200/90 shadow-xs ${className}`}>
+    <div className={`bg-mb-paper rounded-2xl border border-mb-line shadow-[0_10px_28px_rgba(74,46,31,0.06)] ${className}`}>
       {children}
     </div>
   );
@@ -51,20 +51,20 @@ export function KpiCard({
   tone?: "emerald" | "blue" | "amber" | "rose" | "slate";
 }) {
   const toneClasses = {
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    blue: "bg-blue-50 text-blue-700 border-blue-100",
-    amber: "bg-amber-50 text-amber-700 border-amber-100",
-    rose: "bg-rose-50 text-rose-700 border-rose-100",
-    slate: "bg-slate-100 text-slate-700 border-slate-200",
+    emerald: "bg-mb-cream text-mb-cocoa border-mb-line",
+    blue: "bg-[#f3e7f6] text-[#6b3a62] border-[#ead3e6]",
+    amber: "bg-mb-cream text-mb-cocoa border-mb-line",
+    rose: "bg-rose-50 text-rose-800 border-rose-200",
+    slate: "bg-mb-beige text-mb-ink border-mb-line",
   };
 
   return (
-    <Card className="p-4 sm:p-5 hover:border-slate-300 transition-colors">
+    <Card className="p-4 sm:p-5 hover:border-mb-amber transition-colors">
       <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 leading-snug">{label}</p>
-          <p className="text-lg xl:text-xl font-bold text-slate-900 mt-1.5 tabular-nums whitespace-nowrap">{value}</p>
-          {subtext && <p className="text-xs text-slate-500 mt-1 truncate">{subtext}</p>}
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-mb-ink leading-snug">{label}</p>
+          <p className="text-lg xl:text-xl font-bold text-mb-cocoa mt-1.5 tabular-nums whitespace-nowrap">{value}</p>
+          {subtext && <p className="text-xs text-mb-ink mt-1 truncate">{subtext}</p>}
         </div>
         <div className={`p-2 rounded-lg border shrink-0 ${toneClasses[tone]}`}>{icon}</div>
       </div>
@@ -75,27 +75,27 @@ export function KpiCard({
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const s = status.toUpperCase();
   const styles: Record<string, string> = {
-    PAID: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    POSTED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    IN_STOCK: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    PARTIAL: "bg-amber-50 text-amber-700 border-amber-200",
-    SENT: "bg-blue-50 text-blue-700 border-blue-200",
-    OPEN: "bg-blue-50 text-blue-700 border-blue-200",
-    OVERDUE: "bg-rose-50 text-rose-700 border-rose-200",
-    LOW_STOCK: "bg-rose-50 text-rose-700 border-rose-200",
-    DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
-    VOID: "bg-slate-100 text-slate-500 border-slate-200",
-    ASSET: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    LIABILITY: "bg-rose-50 text-rose-700 border-rose-200",
-    EQUITY: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    REVENUE: "bg-teal-50 text-teal-700 border-teal-200",
-    EXPENSE: "bg-amber-50 text-amber-700 border-amber-200",
+    PAID: "bg-[#e7f6ee] text-[#0f6b45] border-[#b7e4cc]",
+    POSTED: "bg-[#e7f6ee] text-[#0f6b45] border-[#b7e4cc]",
+    ACTIVE: "bg-[#e7f6ee] text-[#0f6b45] border-[#b7e4cc]",
+    IN_STOCK: "bg-[#e7f6ee] text-[#0f6b45] border-[#b7e4cc]",
+    PARTIAL: "bg-mb-cream text-mb-cocoa border-mb-line",
+    SENT: "bg-[#eef3fb] text-[#1e4b8f] border-[#d5e2f5]",
+    OPEN: "bg-[#eef3fb] text-[#1e4b8f] border-[#d5e2f5]",
+    OVERDUE: "bg-rose-50 text-rose-800 border-rose-200",
+    LOW_STOCK: "bg-rose-50 text-rose-800 border-rose-200",
+    DRAFT: "bg-mb-beige text-mb-ink border-mb-line",
+    VOID: "bg-mb-beige text-mb-ink border-mb-line",
+    ASSET: "bg-[#e7f6ee] text-[#0f6b45] border-[#b7e4cc]",
+    LIABILITY: "bg-rose-50 text-rose-800 border-rose-200",
+    EQUITY: "bg-[#f3e7f6] text-[#6b3a62] border-[#ead3e6]",
+    REVENUE: "bg-mb-cream text-mb-cocoa border-mb-line",
+    EXPENSE: "bg-[#fdeee4] text-[#8a3d16] border-[#f3d2b8]",
   };
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-        styles[s] || "bg-slate-100 text-slate-700 border-slate-200"
+        styles[s] || "bg-mb-beige text-mb-cocoa border-mb-line"
       }`}
     >
       {label || status}
@@ -118,16 +118,19 @@ export function Modal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[1px] p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(74,46,31,0.45)] backdrop-blur-[2px] p-4 overflow-y-auto">
       <div
-        className={`bg-white rounded-2xl shadow-xl border border-slate-200 w-full ${maxWidth} max-h-[90vh] flex flex-col overflow-hidden`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`bg-mb-paper rounded-2xl shadow-[0_24px_60px_rgba(74,46,31,0.18)] border border-mb-line w-full ${maxWidth} max-h-[90vh] flex flex-col overflow-hidden`}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 no-print">
-          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mb-line bg-mb-cream/60 no-print">
+          <h2 className="text-lg font-bold text-mb-cocoa">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-xl text-mb-ink hover:text-mb-cocoa hover:bg-mb-paper transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mb-cocoa"
           >
             <X className="w-5 h-5" />
           </button>
@@ -143,16 +146,16 @@ export function ToastBanner({ toast }: { toast: { type: "success" | "error"; mes
   return (
     <div className="fixed bottom-5 end-5 z-50 no-print animate-in fade-in slide-in-from-bottom-2">
       <div
-        className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium ${
+        className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-[0_12px_30px_rgba(74,46,31,0.16)] border text-sm font-medium ${
           toast.type === "success"
-            ? "bg-emerald-950 text-emerald-50 border-emerald-800"
-            : "bg-rose-950 text-rose-50 border-rose-800"
+            ? "bg-mb-cocoa text-mb-cream border-[#3a2418]"
+            : "bg-rose-800 text-rose-50 border-rose-900"
         }`}
       >
         {toast.type === "success" ? (
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-mb-amber shrink-0" />
         ) : (
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <AlertCircle className="w-4 h-4 text-rose-200 shrink-0" />
         )}
         <span>{toast.message}</span>
       </div>
@@ -189,7 +192,7 @@ export function CsvButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium border border-mb-line bg-mb-paper text-mb-cocoa hover:bg-mb-cream transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mb-cocoa"
     >
       <Download className="w-4 h-4" />
       <span>{label}</span>

@@ -21,8 +21,8 @@ import {
   Sparkles,
   Download,
 } from "lucide-react";
-import { LANGUAGES } from "@/lib/i18n";
 import { MizanLockup, MizanMark } from "@/components/brand/MizanLogo";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { useApp, type ActiveTab } from "./AppContext";
 import { ToastBanner } from "./ui";
 import { DashboardModule } from "./modules/DashboardModule";
@@ -140,27 +140,25 @@ export function AppShell() {
       : t.topbar.roleViewer;
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-200 w-64 shrink-0 select-none">
-      {/* Brand */}
-      <div className="px-3 pt-3 pb-3 flex items-center gap-2 border-b border-slate-800/80">
-        <div className="flex-1 min-w-0 rounded-2xl bg-mb-beige px-2.5 py-2">
+    <div id="app-sidebar" className="flex flex-col h-full bg-mb-paper text-mb-cocoa w-64 shrink-0 select-none border-e border-mb-line shadow-[8px_0_30px_rgba(74,46,31,0.04)]">
+      <div className="px-3 pt-3 pb-3 flex items-center gap-2 border-b border-mb-line">
+        <div className="flex-1 min-w-0 rounded-2xl bg-mb-cream px-2.5 py-2">
           <MizanLockup name={t.appName} markClassName="h-9 w-9" nameClassName="text-[15px]" />
         </div>
         <button
           type="button"
           onClick={() => setMobileMenu(false)}
-          className="lg:hidden p-1 text-slate-400 hover:text-white"
-          aria-label={t.common.close}
+          className="lg:hidden p-2 rounded-xl text-mb-ink hover:bg-mb-cream hover:text-mb-cocoa focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mb-cocoa"
+          aria-label={t.marketing.closeMenu}
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5" aria-label={t.appName}>
         {navGroups.map((group) => (
           <div key={group.label}>
-            <div className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <div className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-mb-ink">
               {group.label}
             </div>
             <div className="space-y-0.5">
@@ -174,13 +172,14 @@ export function AppShell() {
                       setActiveTab(item.id);
                       setMobileMenu(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                    aria-current={active ? "page" : undefined}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mb-cocoa ${
                       active
-                        ? "bg-emerald-600 text-white shadow-sm shadow-emerald-950/50"
-                        : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                        ? "bg-mb-amber text-mb-cocoa shadow-sm"
+                        : "text-mb-ink hover:bg-mb-cream hover:text-mb-cocoa"
                     }`}
                   >
-                    <span className={active ? "text-white" : "text-slate-400"}>{item.icon}</span>
+                    <span className="text-mb-cocoa">{item.icon}</span>
                     <span className="truncate">{item.label}</span>
                   </button>
                 );
@@ -190,13 +189,12 @@ export function AppShell() {
         ))}
       </nav>
 
-      {/* Install PWA Prompt (if available) + Trial Pill + User Card */}
-      <div className="p-3 border-t border-slate-800/80 space-y-2">
+      <div className="p-3 border-t border-mb-line space-y-2">
         {installPrompt && (
           <button
             type="button"
             onClick={() => void handleInstallPwa()}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/30 text-xs font-semibold cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-2xl bg-mb-cream border border-mb-line text-mb-cocoa hover:bg-mb-amber/40 text-xs font-semibold cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>{t.auth.installMobileApp}</span>
@@ -210,28 +208,31 @@ export function AppShell() {
               setActiveTab("settings");
               setMobileMenu(false);
             }}
-            className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-800/70 text-start hover:border-emerald-500 transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2 p-2.5 rounded-2xl bg-mb-cream border border-mb-line text-start hover:border-mb-amber transition-colors cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <Sparkles className="w-4 h-4 text-mb-cocoa shrink-0" />
             <div className="min-w-0">
-              <div className="text-[11px] font-bold text-emerald-300 truncate">{t.auth.freeTrialBadge}</div>
-              <div className="text-[10px] text-emerald-200/80 truncate">
+              <div className="text-[11px] font-bold text-mb-cocoa truncate">{t.auth.freeTrialBadge}</div>
+              <div className="text-[10px] text-mb-ink truncate">
                 {trialDaysLeft} {t.auth.trialDaysLeft}
               </div>
             </div>
           </button>
         )}
 
-        <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900">
+        <LanguageSelector lang={lang} onChange={setLang} label={t.marketing.languageLabel} fullWidth placement="up" />
+
+        <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-mb-beige">
           <div className="min-w-0">
-            <div className="text-xs font-bold text-white truncate">{user?.name}</div>
-            <div className="text-[11px] text-emerald-400 font-medium">{roleLabel}</div>
+            <div className="text-xs font-bold text-mb-cocoa truncate">{user?.name}</div>
+            <div className="text-[11px] text-mb-ink font-medium">{roleLabel}</div>
           </div>
           <button
             type="button"
             onClick={() => void logout()}
             title={t.topbar.signOut}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label={t.topbar.signOut}
+            className="p-2 rounded-xl text-mb-ink hover:text-mb-cocoa hover:bg-mb-paper transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mb-cocoa"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -249,39 +250,38 @@ export function AppShell() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      {/* Desktop Sidebar */}
+    <div className="mb-app min-h-screen flex bg-mb-beige text-mb-cocoa">
       <aside className="hidden lg:flex no-print sticky top-0 h-screen">{sidebarContent}</aside>
 
-      {/* Mobile Sidebar Drawer */}
       {mobileMenu && (
-        <div className="fixed inset-0 z-50 lg:hidden flex bg-slate-950/60 backdrop-blur-[1px] no-print">
+        <div className="fixed inset-0 z-50 lg:hidden flex bg-[rgba(74,46,31,0.45)] backdrop-blur-[2px] no-print">
           {sidebarContent}
-          <div className="flex-1" onClick={() => setMobileMenu(false)} />
+          <button type="button" className="flex-1 cursor-default" aria-label={t.marketing.closeMenu} onClick={() => setMobileMenu(false)} />
         </div>
       )}
 
-      {/* Main Content Column */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Utility Header */}
-        <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 no-print">
+        <header className="sticky top-0 z-30 min-h-16 bg-mb-beige/90 backdrop-blur border-b border-mb-line px-3 sm:px-6 py-2 flex items-center justify-between gap-2 sm:gap-3 no-print">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileMenu(true)}
-              className="lg:hidden p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+              className="lg:hidden p-2 rounded-xl border border-mb-line bg-mb-paper text-mb-cocoa hover:bg-mb-cream focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mb-cocoa"
+              aria-expanded={mobileMenu}
+              aria-controls="app-sidebar"
+              aria-label={t.marketing.openMenu}
             >
               <Menu className="w-5 h-5" />
             </button>
             <MizanMark className="h-8 w-8 lg:hidden shrink-0" title={t.appName} />
 
-            {/* Company Switcher */}
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 min-w-0">
-              <Building2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <div className="flex items-center gap-2 bg-mb-paper border border-mb-line rounded-2xl px-2.5 py-1.5 min-w-0 shadow-sm">
+              <Building2 className="w-4 h-4 text-mb-cocoa shrink-0" />
               <select
                 value={activeCompany?.id ?? ""}
                 onChange={(e) => setActiveCompanyId(Number(e.target.value))}
-                className="bg-transparent text-xs sm:text-sm font-bold text-slate-900 focus:outline-none max-w-[140px] sm:max-w-[230px] truncate cursor-pointer"
+                aria-label={t.topbar.company}
+                className="bg-transparent text-xs sm:text-sm font-bold text-mb-cocoa focus:outline-none max-w-[120px] sm:max-w-[230px] truncate cursor-pointer"
               >
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -295,9 +295,9 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={() => setActiveTab("settings")}
-                className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-amber/30 cursor-pointer"
               >
-                <Sparkles className="w-3 h-3 text-emerald-600" />
+                <Sparkles className="w-3 h-3 text-mb-cocoa" />
                 <span>
                   {trialDaysLeft} {t.auth.trialDaysLeft}
                 </span>
@@ -305,21 +305,20 @@ export function AppShell() {
             )}
 
             {user?.role === "viewer" && (
-              <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-mb-cream text-mb-cocoa border border-mb-line">
                 {t.topbar.readOnlyBadge}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {/* Calendar Toggle (Gregorian / Ethiopian) */}
-            <div className="hidden md:flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-              <Calendar className="w-3.5 h-3.5 text-slate-500 mx-1.5" />
+            <div className="hidden md:flex items-center bg-mb-cream p-0.5 rounded-full border border-mb-line text-xs">
+              <Calendar className="w-3.5 h-3.5 text-mb-ink mx-1.5" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setCalendar("gregorian")}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
-                  calendar === "gregorian" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                className={`px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer ${
+                  calendar === "gregorian" ? "bg-mb-paper text-mb-cocoa shadow-sm" : "text-mb-ink hover:text-mb-cocoa"
                 }`}
               >
                 {t.topbar.gregorian}
@@ -327,32 +326,15 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={() => setCalendar("ethiopian")}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
-                  calendar === "ethiopian" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-500 hover:text-slate-800"
+                className={`px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer ${
+                  calendar === "ethiopian" ? "bg-mb-amber text-mb-cocoa shadow-sm" : "text-mb-ink hover:text-mb-cocoa"
                 }`}
               >
                 {t.topbar.ethiopian}
               </button>
             </div>
 
-            {/* 5-Language Switcher */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px] sm:text-xs">
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l.code}
-                  type="button"
-                  onClick={() => setLang(l.code)}
-                  title={l.label}
-                  className={`px-1.5 sm:px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
-                    lang === l.code
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {l.shortLabel}
-                </button>
-              ))}
-            </div>
+            <LanguageSelector lang={lang} onChange={setLang} label={t.marketing.languageLabel} compact />
           </div>
         </header>
 
@@ -360,7 +342,7 @@ export function AppShell() {
         {viewOnly && <ReadOnlyBanner />}
 
         {/* Active Module Viewport (extra bottom padding on mobile for bottom tab bar) */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10 max-w-7xl w-full mx-auto">
           {subscription && !subscription.canMutate && !viewOnly ? (
             <SubscriptionNeeded
               onContinue={() => {
@@ -387,7 +369,7 @@ export function AppShell() {
       </div>
 
       {/* Native-feeling Mobile Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-1.5 flex items-center justify-around no-print shadow-lg">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-mb-paper/95 backdrop-blur border-t border-mb-line px-2 py-1.5 flex items-center justify-around no-print shadow-[0_-8px_24px_rgba(74,46,31,0.06)]" aria-label={t.appName}>
         {mobileBottomItems.map((item) => {
           const isActive = item.id !== "menu" && activeTab === item.id;
           return (
@@ -401,8 +383,8 @@ export function AppShell() {
                   setActiveTab(item.id);
                 }
               }}
-              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-xl min-w-[58px] transition-colors ${
-                isActive ? "text-emerald-700 font-bold" : "text-slate-500 font-medium"
+              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-2xl min-w-[58px] transition-colors ${
+                isActive ? "text-mb-cocoa font-bold bg-mb-cream" : "text-mb-ink font-medium"
               }`}
             >
               {item.icon}

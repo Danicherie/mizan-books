@@ -167,7 +167,7 @@ export function JournalEntriesModule() {
             <button
               type="button"
               onClick={() => setOpenModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>{t.journal.newEntry}</span>
@@ -177,7 +177,7 @@ export function JournalEntriesModule() {
       />
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-slate-400">{t.common.loading}</div>
+        <div className="py-16 text-center text-sm text-mb-ink/70">{t.common.loading}</div>
       ) : (
         <div className="space-y-3">
           {entries.map((je) => {
@@ -188,15 +188,15 @@ export function JournalEntriesModule() {
                 <button
                   type="button"
                   onClick={() => setExpanded((p) => ({ ...p, [je.id]: !p[je.id] }))}
-                  className="w-full px-5 py-4 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors text-start cursor-pointer"
+                  className="w-full px-5 py-4 flex flex-wrap items-center justify-between gap-3 hover:bg-mb-cream/80 transition-colors text-start cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                    <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-mb-cream text-mb-cocoa border border-mb-line shrink-0">
                       {je.entry_number}
                     </span>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-900 truncate">{je.description}</div>
-                      <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-2">
+                      <div className="text-sm font-semibold text-mb-cocoa truncate">{je.description}</div>
+                      <div className="text-xs text-mb-ink mt-0.5 flex flex-wrap items-center gap-2">
                         <span>{formatDt(je.entry_date)}</span>
                         {je.reference && <span>· {t.common.reference}: {je.reference}</span>}
                         <span>· {sourceLabel(je.source_type)}</span>
@@ -205,15 +205,15 @@ export function JournalEntriesModule() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <StatusBadge status={je.status} label={t.common.posted} />
-                    <span className="font-bold text-sm tabular-nums text-slate-900">{formatAmt(jeTotal)}</span>
-                    {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                    <span className="font-bold text-sm tabular-nums text-mb-cocoa">{formatAmt(jeTotal)}</span>
+                    {isOpen ? <ChevronUp className="w-4 h-4 text-mb-ink/70" /> : <ChevronDown className="w-4 h-4 text-mb-ink/70" />}
                   </div>
                 </button>
 
                 {isOpen && (
-                  <div className="border-t border-slate-200 bg-slate-50/50 overflow-x-auto">
+                  <div className="border-t border-mb-line bg-mb-beige/50 overflow-x-auto">
                     <table className="w-full text-xs">
-                      <thead className="text-slate-500 uppercase border-b border-slate-200">
+                      <thead className="text-mb-ink uppercase border-b border-mb-line">
                         <tr>
                           <th className="px-5 py-2 text-start">{t.journal.account}</th>
                           <th className="px-5 py-2 text-start">{t.common.description}</th>
@@ -221,11 +221,11 @@ export function JournalEntriesModule() {
                           <th className="px-5 py-2 text-end">{t.journal.credit}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-mb-line/70">
                         {je.lines.map((l) => (
                           <tr key={l.id}>
-                            <td className="px-5 py-2.5 font-medium text-slate-800">
-                              <span className="font-mono text-slate-500 me-2">{l.account_code}</span>
+                            <td className="px-5 py-2.5 font-medium text-mb-cocoa">
+                              <span className="font-mono text-mb-ink me-2">{l.account_code}</span>
                               {localizedAccountName(
                                 {
                                   name: l.account_name,
@@ -237,11 +237,11 @@ export function JournalEntriesModule() {
                                 lang
                               )}
                             </td>
-                            <td className="px-5 py-2.5 text-slate-600">{l.description}</td>
-                            <td className="px-5 py-2.5 text-end font-semibold tabular-nums text-slate-900">
+                            <td className="px-5 py-2.5 text-mb-ink">{l.description}</td>
+                            <td className="px-5 py-2.5 text-end font-semibold tabular-nums text-mb-cocoa">
                               {l.debit > 0 ? formatAmt(l.debit) : "—"}
                             </td>
-                            <td className="px-5 py-2.5 text-end font-semibold tabular-nums text-slate-900">
+                            <td className="px-5 py-2.5 text-end font-semibold tabular-nums text-mb-cocoa">
                               {l.credit > 0 ? formatAmt(l.credit) : "—"}
                             </td>
                           </tr>
@@ -261,38 +261,38 @@ export function JournalEntriesModule() {
         <form onSubmit={handlePost} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.date} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.date} *</label>
               <input
                 type="date"
                 required
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.reference}</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.reference}</label>
               <input
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="e.g. ADJ-001"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.description} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.description} *</label>
               <input
                 required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="border border-mb-line rounded-xl overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase">
+              <thead className="bg-mb-beige text-mb-ink uppercase">
                 <tr>
                   <th className="px-3 py-2 text-start">{t.journal.account}</th>
                   <th className="px-3 py-2 text-start">{t.common.description}</th>
@@ -301,7 +301,7 @@ export function JournalEntriesModule() {
                   <th className="w-10" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {lines.map((line, idx) => (
                   <tr key={idx}>
                     <td className="p-2">
@@ -313,7 +313,7 @@ export function JournalEntriesModule() {
                           next[idx].account_id = e.target.value;
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 bg-white text-xs"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line bg-mb-paper text-xs"
                       >
                         <option value="">-- {t.journal.account} --</option>
                         {accounts.map((a) => (
@@ -331,7 +331,7 @@ export function JournalEntriesModule() {
                           next[idx].description = e.target.value;
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs"
                       />
                     </td>
                     <td className="p-2">
@@ -346,7 +346,7 @@ export function JournalEntriesModule() {
                           if (parseFloat(e.target.value) > 0) next[idx].credit = "";
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs text-end tabular-nums"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs text-end tabular-nums"
                       />
                     </td>
                     <td className="p-2">
@@ -361,7 +361,7 @@ export function JournalEntriesModule() {
                           if (parseFloat(e.target.value) > 0) next[idx].debit = "";
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs text-end tabular-nums"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs text-end tabular-nums"
                       />
                     </td>
                     <td className="p-2 text-center">
@@ -369,7 +369,7 @@ export function JournalEntriesModule() {
                         <button
                           type="button"
                           onClick={() => setLines(lines.filter((_, i) => i !== idx))}
-                          className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                          className="text-mb-ink/70 hover:text-rose-600 cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -385,7 +385,7 @@ export function JournalEntriesModule() {
             <button
               type="button"
               onClick={() => setLines([...lines, { account_id: "", description: "", debit: "", credit: "" }])}
-              className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-mb-cocoa hover:underline cursor-pointer"
             >
               + {t.common.addLine}
             </button>
@@ -398,7 +398,7 @@ export function JournalEntriesModule() {
                 {t.journal.totalCredit}: <strong className="tabular-nums">{formatAmt(totalCredit)}</strong>
               </span>
               {isBalanced ? (
-                <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+                <span className="inline-flex items-center gap-1 font-semibold text-mb-cocoa">
                   <CheckCircle2 className="w-4 h-4" /> {t.journal.balanced}
                 </span>
               ) : (
@@ -409,18 +409,18 @@ export function JournalEntriesModule() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
             <button
               type="button"
               onClick={() => setOpenModal(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer"
             >
               {t.common.cancel}
             </button>
             <button
               type="submit"
               disabled={!isBalanced}
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep disabled:opacity-40 cursor-pointer"
             >
               {t.journal.postEntry}
             </button>

@@ -50,28 +50,28 @@ function SubscriptionPanel() {
   return (
     <Card className="p-6 text-start">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-mb-cocoa">
           <Sparkles className="w-4 h-4" />
           <span>{t.auth.subscriptionTab}</span>
         </div>
         <StatusBadge status={access.canMutate ? "ACTIVE" : "OVERDUE"} label={statusLabel(access.status, t)} />
       </div>
-      <h3 className="text-xl font-bold text-slate-900 mt-3">
+      <h3 className="text-xl font-bold text-mb-cocoa mt-3">
         {access.status === "trial" && access.daysLeft != null
           ? `${access.daysLeft} ${t.auth.trialDaysLeft}`
           : statusLabel(access.status, t)}
       </h3>
       {activeCompany.trial_ends_at && access.status === "trial" && (
-        <p className="text-sm text-slate-600 mt-2">
+        <p className="text-sm text-mb-ink mt-2">
           {t.auth.trialEndsOn}: {formatDt(activeCompany.trial_ends_at.slice(0, 10))}
         </p>
       )}
       {activeCompany.paid_until && (
-        <p className="text-sm text-slate-600 mt-2">
+        <p className="text-sm text-mb-ink mt-2">
           {t.auth.paidUntilLabel}: {formatDt(activeCompany.paid_until.slice(0, 10))}
         </p>
       )}
-      <p className="text-sm text-slate-700 mt-4 leading-relaxed">{t.auth.subscriptionContact}</p>
+      <p className="text-sm text-mb-ink mt-4 leading-relaxed">{t.auth.subscriptionContact}</p>
     </Card>
   );
 }
@@ -215,7 +215,7 @@ export function SettingsModule() {
               <button
                 type="button"
                 onClick={() => setOpenNewComp(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.settings.createCompany}</span>
@@ -223,7 +223,7 @@ export function SettingsModule() {
               <button
                 type="button"
                 onClick={() => setOpenNewUser(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-mb-paper border border-mb-line text-mb-ink hover:bg-mb-cream cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.settings.addUser}</span>
@@ -247,8 +247,8 @@ export function SettingsModule() {
             key={k}
             type="button"
             onClick={() => setSubTab(k)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
-              subTab === k ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
+              subTab === k ? "bg-mb-cocoa text-mb-cream" : "bg-mb-paper border border-mb-line text-mb-ink hover:bg-mb-cream"
             }`}
           >
             {label}
@@ -257,7 +257,7 @@ export function SettingsModule() {
       </div>
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-slate-400">{t.common.loading}</div>
+        <div className="py-16 text-center text-sm text-mb-ink/70">{t.common.loading}</div>
       ) : subTab === "companies" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {companies.map((c) => {
@@ -265,16 +265,16 @@ export function SettingsModule() {
             return (
               <Card
                 key={c.id}
-                className={`p-5 ${isActive ? "border-emerald-500 ring-1 ring-emerald-500/30" : ""}`}
+                className={`p-5 ${isActive ? "border-mb-amber ring-1 ring-mb-cocoa/30" : ""}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-mb-cream text-mb-cocoa flex items-center justify-center">
                       <Building2 className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900">{c.name}</h3>
-                      <p className="text-xs text-slate-500">{c.legal_name}</p>
+                      <h3 className="font-bold text-mb-cocoa">{c.name}</h3>
+                      <p className="text-xs text-mb-ink">{c.legal_name}</p>
                     </div>
                   </div>
                   {isActive ? (
@@ -283,25 +283,25 @@ export function SettingsModule() {
                     <button
                       type="button"
                       onClick={() => setActiveCompanyId(c.id)}
-                      className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      className="px-3 py-1 rounded-xl text-xs font-semibold border border-mb-line text-mb-ink hover:bg-mb-cream cursor-pointer"
                     >
                       {t.topbar.company}
                     </button>
                   )}
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-mb-ink bg-mb-beige rounded-xl p-3 border border-mb-line/70">
                   <div>
-                    <span className="text-slate-400">{t.settings.baseCurrency}:</span> <strong>{c.base_currency}</strong>
+                    <span className="text-mb-ink/70">{t.settings.baseCurrency}:</span> <strong>{c.base_currency}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">{t.common.tin}:</span> <strong>{c.tin_number || "—"}</strong>
+                    <span className="text-mb-ink/70">{t.common.tin}:</span> <strong>{c.tin_number || "—"}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">{t.common.vat}:</span> <strong>{c.default_vat_rate}%</strong>
+                    <span className="text-mb-ink/70">{t.common.vat}:</span> <strong>{c.default_vat_rate}%</strong>
                   </div>
                   <div>
-                    <span className="text-slate-400">{t.common.wht}:</span> <strong>{c.default_wht_rate}%</strong>
+                    <span className="text-mb-ink/70">{t.common.wht}:</span> <strong>{c.default_wht_rate}%</strong>
                   </div>
                 </div>
               </Card>
@@ -312,22 +312,22 @@ export function SettingsModule() {
         <SubscriptionPanel />
       ) : subTab === "fx" ? (
         <Card className="overflow-hidden">
-          <div className="p-4 border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
-            {t.settings.baseCurrency}: <strong className="text-slate-900">{activeCompany?.base_currency}</strong>
+          <div className="p-4 border-b border-mb-line bg-mb-beige text-xs font-semibold text-mb-ink">
+            {t.settings.baseCurrency}: <strong className="text-mb-cocoa">{activeCompany?.base_currency}</strong>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+              <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
                 <tr>
                   <th className="px-4 py-3 text-start">{t.common.currency}</th>
                   <th className="px-4 py-3 text-start">{t.settings.rateToBase} (1 Unit → {activeCompany?.base_currency})</th>
                   <th className="px-4 py-3 text-end">{t.common.actions}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {rates.map((r) => (
                   <tr key={r.id}>
-                    <td className="px-4 py-3 font-mono font-bold text-slate-900">{r.currency_code}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-mb-cocoa">{r.currency_code}</td>
                     <td className="px-4 py-3">
                       <input
                         type="number"
@@ -335,7 +335,7 @@ export function SettingsModule() {
                         disabled={!canWrite || r.currency_code === activeCompany?.base_currency}
                         value={rateEdits[r.currency_code] ?? r.rate_to_base}
                         onChange={(e) => setRateEdits({ ...rateEdits, [r.currency_code]: e.target.value })}
-                        className="w-40 px-3 py-1.5 rounded-lg border border-slate-300 text-sm tabular-nums disabled:bg-slate-50"
+                        className="w-40 px-3 py-1.5 rounded-xl border border-mb-line text-sm tabular-nums disabled:bg-mb-beige"
                       />
                     </td>
                     <td className="px-4 py-3 text-end">
@@ -343,7 +343,7 @@ export function SettingsModule() {
                         <button
                           type="button"
                           onClick={() => handleUpdateRate(r.currency_code)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-cream cursor-pointer"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
                           <span>{t.settings.updateRate}</span>
@@ -360,7 +360,7 @@ export function SettingsModule() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+              <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
                 <tr>
                   <th className="px-4 py-3 text-start">{t.common.name}</th>
                   <th className="px-4 py-3 text-start">{t.common.email}</th>
@@ -368,18 +368,18 @@ export function SettingsModule() {
                   <th className="px-4 py-3 text-start">{t.topbar.language}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {users.map((u) => (
                   <tr key={u.id}>
-                    <td className="px-4 py-3 font-semibold text-slate-900">{u.name}</td>
-                    <td className="px-4 py-3 text-slate-600">{u.email}</td>
+                    <td className="px-4 py-3 font-semibold text-mb-cocoa">{u.name}</td>
+                    <td className="px-4 py-3 text-mb-ink">{u.email}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-mb-cream text-mb-ink border border-mb-line">
                         <Shield className="w-3 h-3" />
                         {u.role === "admin" ? t.topbar.roleAdmin : u.role === "accountant" ? t.topbar.roleAccountant : t.topbar.roleViewer}
                       </span>
                     </td>
-                    <td className="px-4 py-3 uppercase text-xs font-mono text-slate-500">{u.preferred_lang}</td>
+                    <td className="px-4 py-3 uppercase text-xs font-mono text-mb-ink">{u.preferred_lang}</td>
                   </tr>
                 ))}
               </tbody>
@@ -390,7 +390,7 @@ export function SettingsModule() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase border-b border-slate-200">
+              <thead className="bg-mb-beige text-mb-ink uppercase border-b border-mb-line">
                 <tr>
                   <th className="px-4 py-3 text-start">{t.common.date}</th>
                   <th className="px-4 py-3 text-start">{t.common.name}</th>
@@ -398,13 +398,13 @@ export function SettingsModule() {
                   <th className="px-4 py-3 text-start">{t.common.description}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {auditLogs.map((l) => (
                   <tr key={l.id}>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-slate-500">{formatDt(l.created_at.slice(0, 10))}</td>
-                    <td className="px-4 py-2.5 font-medium text-slate-800">{l.user_name || "System"}</td>
-                    <td className="px-4 py-2.5 font-mono font-semibold text-emerald-700">{l.action}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{l.details}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-mb-ink">{formatDt(l.created_at.slice(0, 10))}</td>
+                    <td className="px-4 py-2.5 font-medium text-mb-cocoa">{l.user_name || "System"}</td>
+                    <td className="px-4 py-2.5 font-mono font-semibold text-mb-cocoa">{l.action}</td>
+                    <td className="px-4 py-2.5 text-mb-ink">{l.details}</td>
                   </tr>
                 ))}
               </tbody>
@@ -418,16 +418,16 @@ export function SettingsModule() {
         <form onSubmit={handleCreateCompany} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.companyName} *</label>
-              <input required value={compForm.name} onChange={(e) => setCompForm({ ...compForm, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.companyName} *</label>
+              <input required value={compForm.name} onChange={(e) => setCompForm({ ...compForm, name: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.legalName}</label>
-              <input value={compForm.legal_name} onChange={(e) => setCompForm({ ...compForm, legal_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.legalName}</label>
+              <input value={compForm.legal_name} onChange={(e) => setCompForm({ ...compForm, legal_name: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.baseCurrency}</label>
-              <select value={compForm.base_currency} onChange={(e) => setCompForm({ ...compForm, base_currency: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.baseCurrency}</label>
+              <select value={compForm.base_currency} onChange={(e) => setCompForm({ ...compForm, base_currency: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.code} — {c.name}
@@ -436,7 +436,7 @@ export function SettingsModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.taxRegime}</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.taxRegime}</label>
               <select
                 value={compForm.tax_regime}
                 onChange={(e) => {
@@ -448,7 +448,7 @@ export function SettingsModule() {
                     default_wht_rate: String(found?.defaultWht ?? 0),
                   });
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 {TAX_REGIMES.map((tr) => (
                   <option key={tr.code} value={tr.code}>
@@ -458,19 +458,19 @@ export function SettingsModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.tin}</label>
-              <input value={compForm.tin_number} onChange={(e) => setCompForm({ ...compForm, tin_number: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.tin}</label>
+              <input value={compForm.tin_number} onChange={(e) => setCompForm({ ...compForm, tin_number: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.country}</label>
-              <input value={compForm.country} onChange={(e) => setCompForm({ ...compForm, country: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.country}</label>
+              <input value={compForm.country} onChange={(e) => setCompForm({ ...compForm, country: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <button type="button" onClick={() => setOpenNewComp(false)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+            <button type="button" onClick={() => setOpenNewComp(false)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
               {t.common.cancel}
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+            <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
               {t.common.create}
             </button>
           </div>
@@ -481,30 +481,30 @@ export function SettingsModule() {
       <Modal open={openNewUser} onClose={() => setOpenNewUser(false)} title={t.settings.addUser} maxWidth="max-w-md">
         <form onSubmit={handleAddUser} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.name} *</label>
-            <input required value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.name} *</label>
+            <input required value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.email} *</label>
-            <input type="email" required value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.email} *</label>
+            <input type="email" required value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.password} *</label>
-            <input type="password" required minLength={8} placeholder={t.auth.passwordHint} value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.password} *</label>
+            <input type="password" required minLength={8} placeholder={t.auth.passwordHint} value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.role}</label>
-            <select value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as "admin" | "accountant" | "viewer" })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.role}</label>
+            <select value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as "admin" | "accountant" | "viewer" })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
               <option value="admin">{t.topbar.roleAdmin}</option>
               <option value="accountant">{t.topbar.roleAccountant}</option>
               <option value="viewer">{t.topbar.roleViewer}</option>
             </select>
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <button type="button" onClick={() => setOpenNewUser(false)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+            <button type="button" onClick={() => setOpenNewUser(false)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
               {t.common.cancel}
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+            <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
               {t.common.create}
             </button>
           </div>

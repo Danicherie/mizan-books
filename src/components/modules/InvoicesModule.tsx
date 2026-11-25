@@ -217,7 +217,7 @@ export function InvoicesModule() {
               <button
                 type="button"
                 onClick={() => setOpenNew(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.sales.newInvoice}</span>
@@ -230,7 +230,7 @@ export function InvoicesModule() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+            <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
               <tr>
                 <th className="px-4 py-3 text-start">{t.sales.invoiceNumber}</th>
                 <th className="px-4 py-3 text-start">{t.sales.customer}</th>
@@ -242,16 +242,16 @@ export function InvoicesModule() {
                 <th className="px-4 py-3 text-end">{t.common.actions}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-mb-line/70">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.loading}
                   </td>
                 </tr>
               ) : invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.noData}
                   </td>
                 </tr>
@@ -259,15 +259,15 @@ export function InvoicesModule() {
                 invoices.map((inv) => {
                   const due = Math.max(0, Number((inv.total - inv.amount_paid).toFixed(2)));
                   return (
-                    <tr key={inv.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono font-bold text-slate-900">{inv.invoice_number}</td>
-                      <td className="px-4 py-3 font-medium text-slate-800">{inv.customer_name}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDt(inv.issue_date)}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDt(inv.due_date)}</td>
+                    <tr key={inv.id} className="hover:bg-mb-cream/70">
+                      <td className="px-4 py-3 font-mono font-bold text-mb-cocoa">{inv.invoice_number}</td>
+                      <td className="px-4 py-3 font-medium text-mb-cocoa">{inv.customer_name}</td>
+                      <td className="px-4 py-3 text-xs text-mb-ink whitespace-nowrap">{formatDt(inv.issue_date)}</td>
+                      <td className="px-4 py-3 text-xs text-mb-ink whitespace-nowrap">{formatDt(inv.due_date)}</td>
                       <td className="px-4 py-3 text-end font-semibold tabular-nums whitespace-nowrap">
                         {formatAmt(inv.total, inv.currency_code)}
                       </td>
-                      <td className="px-4 py-3 text-end font-bold tabular-nums whitespace-nowrap text-slate-900">
+                      <td className="px-4 py-3 text-end font-bold tabular-nums whitespace-nowrap text-mb-cocoa">
                         {formatAmt(due, inv.currency_code)}
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -278,7 +278,7 @@ export function InvoicesModule() {
                           <button
                             type="button"
                             onClick={() => setViewInvoice(inv)}
-                            className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            className="p-1.5 rounded-xl border border-mb-line text-mb-ink hover:bg-mb-cream cursor-pointer"
                             title={t.common.print}
                           >
                             <Eye className="w-4 h-4" />
@@ -290,7 +290,7 @@ export function InvoicesModule() {
                                 setPayInvoice(inv);
                                 setPayAmount(String(due));
                               }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-cream cursor-pointer"
                             >
                               <CreditCard className="w-3.5 h-3.5" />
                               <span>{t.common.recordPayment}</span>
@@ -312,7 +312,7 @@ export function InvoicesModule() {
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.customer} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.customer} *</label>
               <select
                 required
                 value={customerId}
@@ -321,7 +321,7 @@ export function InvoicesModule() {
                   const found = customers.find((c) => String(c.id) === e.target.value);
                   if (found) setCurrencyCode(found.currency_code);
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 <option value="">-- {t.sales.customer} --</option>
                 {customers.map((c) => (
@@ -332,11 +332,11 @@ export function InvoicesModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.currency}</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.currency}</label>
               <select
                 value={currencyCode}
                 onChange={(e) => setCurrencyCode(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -346,54 +346,54 @@ export function InvoicesModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.date} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.date} *</label>
               <input
                 type="date"
                 required
                 value={issueDate}
                 onChange={(e) => setIssueDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.dueDate} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.dueDate} *</label>
               <input
                 type="date"
                 required
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.applyVat}</label>
+                <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.applyVat}</label>
                 <input
                   type="number"
                   step="0.5"
                   min="0"
                   value={vatRate}
                   onChange={(e) => setVatRate(e.target.value)}
-                  className="w-full px-2.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  className="w-full px-2.5 py-2 rounded-xl border border-mb-line text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.applyWht}</label>
+                <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.applyWht}</label>
                 <input
                   type="number"
                   step="0.5"
                   min="0"
                   value={whtRate}
                   onChange={(e) => setWhtRate(e.target.value)}
-                  className="w-full px-2.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  className="w-full px-2.5 py-2 rounded-xl border border-mb-line text-sm"
                 />
               </div>
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="border border-mb-line rounded-xl overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase">
+              <thead className="bg-mb-beige text-mb-ink uppercase">
                 <tr>
                   <th className="px-3 py-2 text-start w-44">{t.sales.selectItem}</th>
                   <th className="px-3 py-2 text-start">{t.common.description}</th>
@@ -403,7 +403,7 @@ export function InvoicesModule() {
                   <th className="w-8" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {lines.map((line, idx) => {
                   const lt = (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
                   return (
@@ -421,7 +421,7 @@ export function InvoicesModule() {
                             }
                             setLines(next);
                           }}
-                          className="w-full px-2 py-1.5 rounded-md border border-slate-300 bg-white text-xs"
+                          className="w-full px-2 py-1.5 rounded-md border border-mb-line bg-mb-paper text-xs"
                         >
                           <option value="">{t.sales.customLine}</option>
                           {items.map((it) => (
@@ -440,7 +440,7 @@ export function InvoicesModule() {
                             next[idx].description = e.target.value;
                             setLines(next);
                           }}
-                          className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs"
+                          className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs"
                         />
                       </td>
                       <td className="p-2">
@@ -454,7 +454,7 @@ export function InvoicesModule() {
                             next[idx].quantity = e.target.value;
                             setLines(next);
                           }}
-                          className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs text-end tabular-nums"
+                          className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs text-end tabular-nums"
                         />
                       </td>
                       <td className="p-2">
@@ -468,7 +468,7 @@ export function InvoicesModule() {
                             next[idx].unit_price = e.target.value;
                             setLines(next);
                           }}
-                          className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs text-end tabular-nums"
+                          className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs text-end tabular-nums"
                         />
                       </td>
                       <td className="p-2 text-end font-semibold tabular-nums">{formatAmt(lt, currencyCode)}</td>
@@ -477,7 +477,7 @@ export function InvoicesModule() {
                           <button
                             type="button"
                             onClick={() => setLines(lines.filter((_, i) => i !== idx))}
-                            className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                            className="text-mb-ink/70 hover:text-rose-600 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -494,18 +494,18 @@ export function InvoicesModule() {
             <button
               type="button"
               onClick={() => setLines([...lines, { item_id: "", description: "", quantity: "1", unit_price: "0" }])}
-              className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-mb-cocoa hover:underline cursor-pointer"
             >
               + {t.common.addLine}
             </button>
 
-            <div className="w-full sm:w-72 bg-slate-50 rounded-xl p-4 space-y-1.5 text-xs border border-slate-200">
+            <div className="w-full sm:w-72 bg-mb-beige rounded-xl p-4 space-y-1.5 text-xs border border-mb-line">
               <div className="flex justify-between">
-                <span className="text-slate-500">{t.common.subtotal}</span>
+                <span className="text-mb-ink">{t.common.subtotal}</span>
                 <span className="font-semibold tabular-nums">{formatAmt(subtotal, currencyCode)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">{t.common.vat} ({vatRate}%)</span>
+                <span className="text-mb-ink">{t.common.vat} ({vatRate}%)</span>
                 <span className="font-semibold tabular-nums">+{formatAmt(vatAmt, currencyCode)}</span>
               </div>
               {whtAmt > 0 && (
@@ -514,7 +514,7 @@ export function InvoicesModule() {
                   <span className="font-semibold tabular-nums">-{formatAmt(whtAmt, currencyCode)}</span>
                 </div>
               )}
-              <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
+              <div className="flex justify-between pt-2 border-t border-mb-line text-sm font-bold text-mb-cocoa">
                 <span>{t.sales.netPayable}</span>
                 <span className="tabular-nums">{formatAmt(netPayable, currencyCode)}</span>
               </div>
@@ -522,25 +522,25 @@ export function InvoicesModule() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.notes}</label>
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.notes}</label>
             <input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+              className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
             <button
               type="button"
               onClick={() => setOpenNew(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer"
             >
               {t.common.cancel}
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
             >
               {t.common.create}
             </button>
@@ -557,14 +557,14 @@ export function InvoicesModule() {
       >
         {payInvoice && (
           <form onSubmit={handlePayment} className="space-y-4">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex justify-between">
-              <span className="text-slate-500">{t.sales.balanceDue}</span>
-              <span className="font-bold text-slate-900 tabular-nums">
+            <div className="p-3 rounded-xl bg-mb-beige border border-mb-line text-xs flex justify-between">
+              <span className="text-mb-ink">{t.sales.balanceDue}</span>
+              <span className="font-bold text-mb-cocoa tabular-nums">
                 {formatAmt(payInvoice.total - payInvoice.amount_paid, payInvoice.currency_code)}
               </span>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
+              <label className="block text-xs font-semibold text-mb-ink mb-1">
                 {t.sales.paymentAmount} ({payInvoice.currency_code}) *
               </label>
               <input
@@ -573,25 +573,25 @@ export function InvoicesModule() {
                 required
                 value={payAmount}
                 onChange={(e) => setPayAmount(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm tabular-nums"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm tabular-nums"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.paymentDate} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.paymentDate} *</label>
               <input
                 type="date"
                 required
                 value={payDate}
                 onChange={(e) => setPayDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.paymentAccount}</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.paymentAccount}</label>
               <select
                 value={payAcctId}
                 onChange={(e) => setPayAcctId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 {cashAccounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -600,17 +600,17 @@ export function InvoicesModule() {
                 ))}
               </select>
             </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
               <button
                 type="button"
                 onClick={() => setPayInvoice(null)}
-                className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer"
               >
                 {t.common.cancel}
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
               >
                 {t.common.confirm}
               </button>
@@ -628,40 +628,40 @@ export function InvoicesModule() {
       >
         {viewInvoice && activeCompany && (
           <div className="print-container space-y-6">
-            <div className="flex flex-wrap justify-between items-start gap-4 border-b border-slate-200 pb-5">
+            <div className="flex flex-wrap justify-between items-start gap-4 border-b border-mb-line pb-5">
               <div>
-                <h3 className="text-xl font-bold text-emerald-800">{activeCompany.name}</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{activeCompany.legal_name}</p>
-                <p className="text-xs text-slate-500">{activeCompany.address}</p>
-                <p className="text-xs font-semibold text-slate-700 mt-1">
+                <h3 className="text-xl font-bold text-mb-cocoa">{activeCompany.name}</h3>
+                <p className="text-xs text-mb-ink mt-0.5">{activeCompany.legal_name}</p>
+                <p className="text-xs text-mb-ink">{activeCompany.address}</p>
+                <p className="text-xs font-semibold text-mb-ink mt-1">
                   {t.common.tin}: {activeCompany.tin_number}
                 </p>
               </div>
               <div className="text-end">
-                <div className="text-lg font-extrabold tracking-wide text-slate-900">{t.sales.taxInvoice}</div>
-                <div className="font-mono text-sm font-bold text-emerald-700">{viewInvoice.invoice_number}</div>
-                <div className="text-xs text-slate-500 mt-1">
+                <div className="text-lg font-extrabold tracking-wide text-mb-cocoa">{t.sales.taxInvoice}</div>
+                <div className="font-mono text-sm font-bold text-mb-cocoa">{viewInvoice.invoice_number}</div>
+                <div className="text-xs text-mb-ink mt-1">
                   {t.common.date}: {formatDt(viewInvoice.issue_date)}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-mb-ink">
                   {t.common.dueDate}: {formatDt(viewInvoice.due_date)}
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs">
-              <div className="font-bold uppercase text-slate-400 mb-1">{t.sales.billTo}</div>
-              <div className="text-sm font-bold text-slate-900">{viewInvoice.customer_name}</div>
-              <div className="text-slate-600">{viewInvoice.customer_address}</div>
+            <div className="bg-mb-beige rounded-xl p-4 border border-mb-line text-xs">
+              <div className="font-bold uppercase text-mb-ink/70 mb-1">{t.sales.billTo}</div>
+              <div className="text-sm font-bold text-mb-cocoa">{viewInvoice.customer_name}</div>
+              <div className="text-mb-ink">{viewInvoice.customer_address}</div>
               {viewInvoice.customer_tin && (
-                <div className="text-slate-700 font-medium mt-0.5">
+                <div className="text-mb-ink font-medium mt-0.5">
                   {t.common.tin}: {viewInvoice.customer_tin}
                 </div>
               )}
             </div>
 
-            <table className="w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
-              <thead className="bg-slate-100 text-xs text-slate-600 uppercase">
+            <table className="w-full text-sm border border-mb-line rounded-xl overflow-hidden">
+              <thead className="bg-mb-cream text-xs text-mb-ink uppercase">
                 <tr>
                   <th className="px-4 py-2.5 text-start">{t.common.description}</th>
                   <th className="px-4 py-2.5 text-end">{t.common.quantity}</th>
@@ -669,10 +669,10 @@ export function InvoicesModule() {
                   <th className="px-4 py-2.5 text-end">{t.common.lineTotal}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-mb-line">
                 {viewInvoice.lines.map((l, idx) => (
                   <tr key={idx}>
-                    <td className="px-4 py-2.5 text-slate-800">{l.description}</td>
+                    <td className="px-4 py-2.5 text-mb-cocoa">{l.description}</td>
                     <td className="px-4 py-2.5 text-end tabular-nums">{l.quantity}</td>
                     <td className="px-4 py-2.5 text-end tabular-nums">
                       {formatAmt(l.unit_price, viewInvoice.currency_code)}
@@ -687,11 +687,11 @@ export function InvoicesModule() {
 
             <div className="flex justify-end">
               <div className="w-72 space-y-1.5 text-sm">
-                <div className="flex justify-between text-slate-600">
+                <div className="flex justify-between text-mb-ink">
                   <span>{t.common.subtotal}</span>
                   <span className="tabular-nums">{formatAmt(viewInvoice.subtotal, viewInvoice.currency_code)}</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
+                <div className="flex justify-between text-mb-ink">
                   <span>{t.common.vat} ({viewInvoice.vat_rate}%)</span>
                   <span className="tabular-nums">{formatAmt(viewInvoice.vat_amount, viewInvoice.currency_code)}</span>
                 </div>
@@ -701,11 +701,11 @@ export function InvoicesModule() {
                     <span className="tabular-nums">-{formatAmt(viewInvoice.wht_amount, viewInvoice.currency_code)}</span>
                   </div>
                 )}
-                <div className="flex justify-between pt-2 border-t border-slate-300 font-bold text-base text-slate-900">
+                <div className="flex justify-between pt-2 border-t border-mb-line font-bold text-base text-mb-cocoa">
                   <span>{t.sales.netPayable}</span>
                   <span className="tabular-nums">{formatAmt(viewInvoice.total, viewInvoice.currency_code)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-emerald-700">
+                <div className="flex justify-between text-xs text-mb-cocoa">
                   <span>{t.sales.amountPaid}</span>
                   <span className="tabular-nums">{formatAmt(viewInvoice.amount_paid, viewInvoice.currency_code)}</span>
                 </div>
@@ -713,16 +713,16 @@ export function InvoicesModule() {
             </div>
 
             {viewInvoice.notes && (
-              <p className="text-xs text-slate-500 border-t border-slate-200 pt-3">
+              <p className="text-xs text-mb-ink border-t border-mb-line pt-3">
                 <strong>{t.common.notes}:</strong> {viewInvoice.notes}
               </p>
             )}
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 no-print">
+            <div className="flex justify-end gap-2 pt-3 border-t border-mb-line no-print">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-cocoa text-mb-cream hover:bg-[#3a2418] cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>{t.common.print}</span>

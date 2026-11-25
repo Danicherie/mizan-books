@@ -1,8 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { LANGUAGES, getDictionary, isRtl, type Dictionary, type Lang } from "@/lib/i18n";
+import { getDictionary, isRtl, type Dictionary, type Lang } from "@/lib/i18n";
 import { MizanLockup } from "@/components/brand/MizanLogo";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 interface MarketingContextValue {
   lang: Lang;
@@ -24,31 +25,7 @@ const focusRing =
 
 function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { lang, setLang, t } = useMarketing();
-  return (
-    <div
-      role="group"
-      aria-label={t.marketing.languageLabel}
-      className="flex flex-wrap items-center gap-1 rounded-full border border-mb-line bg-mb-paper p-1"
-    >
-      {LANGUAGES.map((item) => {
-        const active = item.code === lang;
-        return (
-          <button
-            key={item.code}
-            type="button"
-            lang={item.code}
-            aria-pressed={active}
-            onClick={() => setLang(item.code)}
-            className={`rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors ${focusRing} ${
-              active ? "bg-mb-amber text-mb-cocoa" : "text-mb-ink hover:bg-mb-cream"
-            }`}
-          >
-            {compact ? item.shortLabel : item.nativeLabel}
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <LanguageSelector lang={lang} onChange={setLang} label={t.marketing.languageLabel} compact={compact} />;
 }
 
 export function MarketingShell({
@@ -129,9 +106,7 @@ export function MarketingShell({
               ))}
             </nav>
             <div className="flex items-center gap-2">
-              <div className="hidden xl:block">
-                <LanguageSwitcher compact />
-              </div>
+              <LanguageSwitcher compact />
               <a
                 href="/app"
                 className={`hidden rounded-full px-3 py-2 text-sm font-semibold text-mb-cocoa hover:bg-mb-cream sm:inline-flex ${focusRing}`}
