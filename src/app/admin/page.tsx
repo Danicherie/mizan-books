@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { MizanLockup } from "@/components/brand/MizanLogo";
 
 interface Health {
   db: "ok" | "error";
@@ -25,10 +26,10 @@ function day(value: string | null): string {
 }
 
 function HealthLine({ health }: { health: Health | null }) {
-  if (!health) return <p className="text-sm text-slate-500">Checking the database…</p>;
+  if (!health) return <p className="text-sm text-mb-ink">Checking the database…</p>;
   return (
-    <p className="text-sm text-slate-600">
-      Database: <strong className={health.db === "ok" ? "text-emerald-700" : "text-rose-700"}>{health.db === "ok" ? "OK" : "not OK"}</strong>
+    <p className="text-sm text-mb-ink">
+      Database: <strong className={health.db === "ok" ? "text-mb-cocoa" : "text-rose-700"}>{health.db === "ok" ? "OK" : "not OK"}</strong>
       {" · "}Version {health.version}
     </p>
   );
@@ -115,12 +116,12 @@ export default function OperatorAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900 px-4 py-8">
+    <main className="mb-app min-h-screen bg-mb-beige text-mb-cocoa px-4 py-8">
       <div className="max-w-5xl mx-auto space-y-6">
-        <header className="bg-white border border-slate-200 rounded-2xl p-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Mizan Books</p>
-          <h1 className="text-2xl font-bold mt-1">Operator</h1>
-          <p className="text-sm text-slate-600 mt-2">
+        <header className="bg-mb-paper border border-mb-line rounded-3xl p-6 shadow-[0_10px_28px_rgba(74,46,31,0.06)]">
+          <MizanLockup name="Mizan Books" markClassName="h-10 w-10" nameClassName="text-base" />
+          <h1 className="text-2xl font-bold mt-4">Operator</h1>
+          <p className="text-sm text-mb-ink mt-2">
             This page is for the person who runs Mizan Books. Company users sign in on the main page.
           </p>
           <div className="mt-3">
@@ -136,7 +137,7 @@ export default function OperatorAdminPage() {
         )}
 
         {enabled && !authenticated && (
-          <form onSubmit={(event) => void signIn(event)} className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md space-y-4">
+          <form onSubmit={(event) => void signIn(event)} className="bg-mb-paper border border-mb-line rounded-2xl p-6 max-w-md space-y-4">
             <label className="block text-sm font-semibold" htmlFor="operator-password">
               Operator password
             </label>
@@ -146,27 +147,27 @@ export default function OperatorAdminPage() {
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+              className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
             />
             {error && <p className="text-sm text-rose-700">{error}</p>}
-            <button type="submit" className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold">
+            <button type="submit" className="px-4 py-2 rounded-xl bg-mb-cocoa text-mb-cream text-sm font-semibold">
               Sign in
             </button>
           </form>
         )}
 
         {authenticated && (
-          <section className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4">
+          <section className="bg-mb-paper border border-mb-line rounded-2xl p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold">Companies</h2>
-              <button type="button" onClick={() => void signOut()} className="text-sm font-semibold text-slate-600 underline">
+              <button type="button" onClick={() => void signOut()} className="text-sm font-semibold text-mb-ink underline">
                 Sign out
               </button>
             </div>
             {error && <p className="text-sm text-rose-700">{error}</p>}
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-start">
-                <thead className="text-xs uppercase text-slate-500 border-b border-slate-200">
+                <thead className="text-xs uppercase text-mb-ink border-b border-mb-line">
                   <tr>
                     <th className="py-2 pe-3 text-start">Name</th>
                     <th className="py-2 pe-3 text-start">Created</th>
@@ -178,7 +179,7 @@ export default function OperatorAdminPage() {
                 </thead>
                 <tbody>
                   {companies.map((company) => (
-                    <tr key={company.id} className="border-b border-slate-100 align-top">
+                    <tr key={company.id} className="border-b border-mb-line/70 align-top">
                       <td className="py-3 pe-3 font-semibold">{company.name}</td>
                       <td className="py-3 pe-3">{day(company.created_at)}</td>
                       <td className="py-3 pe-3">{company.user_count}</td>
@@ -192,7 +193,7 @@ export default function OperatorAdminPage() {
                   ))}
                   {companies.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-6 text-slate-500">
+                      <td colSpan={6} className="py-6 text-mb-ink">
                         No companies yet.
                       </td>
                     </tr>
@@ -205,12 +206,12 @@ export default function OperatorAdminPage() {
               {companies.map((company) => (
                 <form
                   key={`actions-${company.id}`}
-                  className="border border-slate-200 rounded-xl p-4 space-y-3"
+                  className="border border-mb-line rounded-xl p-4 space-y-3"
                   onSubmit={(event) => event.preventDefault()}
                 >
                   <h3 className="font-semibold">{company.name}</h3>
                   <div className="flex flex-wrap gap-2 items-end">
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="text-xs font-semibold text-mb-ink">
                       Extend trial by days
                       <input
                         type="number"
@@ -218,7 +219,7 @@ export default function OperatorAdminPage() {
                         max={3650}
                         value={days[company.id] ?? "30"}
                         onChange={(event) => setDays({ ...days, [company.id]: event.target.value })}
-                        className="mt-1 block w-28 px-2 py-1.5 rounded-lg border border-slate-300"
+                        className="mt-1 block w-28 px-2 py-1.5 rounded-xl border border-mb-line"
                       />
                     </label>
                     <button
@@ -230,17 +231,17 @@ export default function OperatorAdminPage() {
                           notes: notes[company.id] || undefined,
                         })
                       }
-                      className="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold disabled:opacity-50"
+                      className="px-3 py-2 rounded-xl bg-mb-cocoa text-mb-cream text-xs font-semibold disabled:opacity-50"
                     >
                       Extend trial
                     </button>
-                    <label className="text-xs font-semibold text-slate-600">
+                    <label className="text-xs font-semibold text-mb-ink">
                       Mark paid until
                       <input
                         type="date"
                         value={paidUntil[company.id] ?? ""}
                         onChange={(event) => setPaidUntil({ ...paidUntil, [company.id]: event.target.value })}
-                        className="mt-1 block px-2 py-1.5 rounded-lg border border-slate-300"
+                        className="mt-1 block px-2 py-1.5 rounded-xl border border-mb-line"
                       />
                     </label>
                     <button
@@ -252,7 +253,7 @@ export default function OperatorAdminPage() {
                           notes: notes[company.id] || undefined,
                         })
                       }
-                      className="px-3 py-2 rounded-lg bg-emerald-700 text-white text-xs font-semibold disabled:opacity-50"
+                      className="px-3 py-2 rounded-xl bg-mb-amber text-mb-cocoa text-xs font-semibold disabled:opacity-50"
                     >
                       Mark paid
                     </button>
@@ -264,17 +265,17 @@ export default function OperatorAdminPage() {
                           notes: notes[company.id] || undefined,
                         })
                       }
-                      className="px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold disabled:opacity-50"
+                      className="px-3 py-2 rounded-xl border border-mb-line text-xs font-semibold disabled:opacity-50"
                     >
                       {company.status === "paused" ? "Unpause" : "Pause"}
                     </button>
                   </div>
-                  <label className="block text-xs font-semibold text-slate-600">
+                  <label className="block text-xs font-semibold text-mb-ink">
                     Note (only you see this)
                     <input
                       value={notes[company.id] ?? company.notes}
                       onChange={(event) => setNotes({ ...notes, [company.id]: event.target.value })}
-                      className="mt-1 w-full px-2 py-1.5 rounded-lg border border-slate-300 font-normal"
+                      className="mt-1 w-full px-2 py-1.5 rounded-xl border border-mb-line font-normal"
                     />
                   </label>
                 </form>

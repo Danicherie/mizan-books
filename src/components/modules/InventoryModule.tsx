@@ -114,7 +114,7 @@ export function InventoryModule() {
             <button
               type="button"
               onClick={() => setOpenAdd(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>{t.inventory.newItem}</span>
@@ -132,7 +132,7 @@ export function InventoryModule() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+            <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
               <tr>
                 <th className="px-4 py-3 text-start">{t.inventory.sku}</th>
                 <th className="px-4 py-3 text-start">{t.common.name}</th>
@@ -144,10 +144,10 @@ export function InventoryModule() {
                 <th className="px-4 py-3 text-end">{t.common.actions}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-mb-line/70">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.loading}
                   </td>
                 </tr>
@@ -155,13 +155,13 @@ export function InventoryModule() {
                 items.map((it) => {
                   const isLow = it.item_type === "PRODUCT" && it.quantity_on_hand <= it.reorder_level;
                   return (
-                    <tr key={it.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono font-bold text-slate-800">{it.sku}</td>
+                    <tr key={it.id} className="hover:bg-mb-cream/70">
+                      <td className="px-4 py-3 font-mono font-bold text-mb-cocoa">{it.sku}</td>
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{it.name}</div>
-                        <div className="text-xs text-slate-400">{it.category}</div>
+                        <div className="font-semibold text-mb-cocoa">{it.name}</div>
+                        <div className="text-xs text-mb-ink/70">{it.category}</div>
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-600">
+                      <td className="px-4 py-3 text-xs text-mb-ink">
                         {it.item_type === "PRODUCT" ? t.inventory.product : t.inventory.service}
                       </td>
                       <td className="px-4 py-3 text-end tabular-nums">{formatAmt(it.unit_cost)}</td>
@@ -184,7 +184,7 @@ export function InventoryModule() {
                           <button
                             type="button"
                             onClick={() => setAdjustItem(it)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-mb-line text-mb-ink hover:bg-mb-cream cursor-pointer"
                           >
                             <SlidersHorizontal className="w-3.5 h-3.5" />
                             <span>{t.inventory.adjustStock}</span>
@@ -205,54 +205,54 @@ export function InventoryModule() {
         <form onSubmit={handleAdd} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.sku} *</label>
-              <input required value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.sku} *</label>
+              <input required value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.itemType}</label>
-              <select value={form.item_type} onChange={(e) => setForm({ ...form, item_type: e.target.value as "PRODUCT" | "SERVICE" })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.itemType}</label>
+              <select value={form.item_type} onChange={(e) => setForm({ ...form, item_type: e.target.value as "PRODUCT" | "SERVICE" })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
                 <option value="PRODUCT">{t.inventory.product}</option>
                 <option value="SERVICE">{t.inventory.service}</option>
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.name} *</label>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.name} *</label>
+              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.category}</label>
-              <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.category}</label>
+              <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.unit}</label>
-              <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.unit}</label>
+              <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.unitCost}</label>
-              <input type="number" step="0.01" value={form.unit_cost} onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.unitCost}</label>
+              <input type="number" step="0.01" value={form.unit_cost} onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.unitPrice}</label>
-              <input type="number" step="0.01" value={form.unit_price} onChange={(e) => setForm({ ...form, unit_price: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.unitPrice}</label>
+              <input type="number" step="0.01" value={form.unit_price} onChange={(e) => setForm({ ...form, unit_price: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             {form.item_type === "PRODUCT" && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.qtyOnHand}</label>
-                  <input type="number" step="0.01" value={form.quantity_on_hand} onChange={(e) => setForm({ ...form, quantity_on_hand: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                  <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.qtyOnHand}</label>
+                  <input type="number" step="0.01" value={form.quantity_on_hand} onChange={(e) => setForm({ ...form, quantity_on_hand: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.reorderLevel}</label>
-                  <input type="number" step="0.01" value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                  <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.reorderLevel}</label>
+                  <input type="number" step="0.01" value={form.reorder_level} onChange={(e) => setForm({ ...form, reorder_level: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
                 </div>
               </>
             )}
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <button type="button" onClick={() => setOpenAdd(false)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+            <button type="button" onClick={() => setOpenAdd(false)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
               {t.common.cancel}
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+            <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
               {t.common.save}
             </button>
           </div>
@@ -263,22 +263,22 @@ export function InventoryModule() {
       <Modal open={!!adjustItem} onClose={() => setAdjustItem(null)} title={`${t.inventory.adjustStock} — ${adjustItem?.name || ""}`} maxWidth="max-w-md">
         {adjustItem && (
           <form onSubmit={handleAdjust} className="space-y-4">
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-mb-ink">
               {t.inventory.qtyOnHand}: <strong>{adjustItem.quantity_on_hand} {adjustItem.unit}</strong>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.adjustmentQty}</label>
-              <input type="number" step="1" required value={delta} onChange={(e) => setDelta(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.adjustmentQty}</label>
+              <input type="number" step="1" required value={delta} onChange={(e) => setDelta(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.inventory.adjustmentReason}</label>
-              <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Restock / Physical count" className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.adjustmentReason}</label>
+              <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Restock / Physical count" className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-              <button type="button" onClick={() => setAdjustItem(null)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+            <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+              <button type="button" onClick={() => setAdjustItem(null)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
                 {t.common.cancel}
               </button>
-              <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+              <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
                 {t.common.confirm}
               </button>
             </div>

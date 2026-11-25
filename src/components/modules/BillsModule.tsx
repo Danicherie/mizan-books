@@ -172,7 +172,7 @@ export function BillsModule() {
             <button
               type="button"
               onClick={() => setOpenNew(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>{t.purchases.newBill}</span>
@@ -184,7 +184,7 @@ export function BillsModule() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+            <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
               <tr>
                 <th className="px-4 py-3 text-start">{t.purchases.billNumber}</th>
                 <th className="px-4 py-3 text-start">{t.purchases.vendor}</th>
@@ -196,16 +196,16 @@ export function BillsModule() {
                 <th className="px-4 py-3 text-end">{t.common.actions}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-mb-line/70">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.loading}
                   </td>
                 </tr>
               ) : bills.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.noData}
                   </td>
                 </tr>
@@ -213,14 +213,14 @@ export function BillsModule() {
                 bills.map((b) => {
                   const due = Math.max(0, Number((b.total - b.amount_paid).toFixed(2)));
                   return (
-                    <tr key={b.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono font-bold text-slate-900">{b.bill_number}</td>
-                      <td className="px-4 py-3 font-medium text-slate-800">{b.vendor_name}</td>
-                      <td className="px-4 py-3 text-xs text-slate-600">
-                        <span className="font-mono text-slate-400 me-1">{b.expense_account_code}</span>
+                    <tr key={b.id} className="hover:bg-mb-cream/70">
+                      <td className="px-4 py-3 font-mono font-bold text-mb-cocoa">{b.bill_number}</td>
+                      <td className="px-4 py-3 font-medium text-mb-cocoa">{b.vendor_name}</td>
+                      <td className="px-4 py-3 text-xs text-mb-ink">
+                        <span className="font-mono text-mb-ink/70 me-1">{b.expense_account_code}</span>
                         {b.expense_account_name}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDt(b.due_date)}</td>
+                      <td className="px-4 py-3 text-xs text-mb-ink whitespace-nowrap">{formatDt(b.due_date)}</td>
                       <td className="px-4 py-3 text-end font-semibold tabular-nums whitespace-nowrap">
                         {formatAmt(b.total, b.currency_code)}
                       </td>
@@ -238,7 +238,7 @@ export function BillsModule() {
                               setPayBill(b);
                               setPayAmount(String(due));
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-cream cursor-pointer"
                           >
                             <CreditCard className="w-3.5 h-3.5" />
                             <span>{t.common.recordPayment}</span>
@@ -259,12 +259,12 @@ export function BillsModule() {
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.purchases.vendor} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.purchases.vendor} *</label>
               <select
                 required
                 value={vendorId}
                 onChange={(e) => setVendorId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 <option value="">-- {t.purchases.vendor} --</option>
                 {vendors.map((v) => (
@@ -275,12 +275,12 @@ export function BillsModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.purchases.expenseAccount} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.purchases.expenseAccount} *</label>
               <select
                 required
                 value={expenseAccountId}
                 onChange={(e) => setExpenseAccountId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 {expenseAccounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -290,16 +290,16 @@ export function BillsModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.date}</label>
-              <input type="date" required value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.date}</label>
+              <input type="date" required value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.dueDate}</label>
-              <input type="date" required value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.dueDate}</label>
+              <input type="date" required value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.currency}</label>
-              <select value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.currency}</label>
+              <select value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.code} ({c.symbol})
@@ -309,19 +309,19 @@ export function BillsModule() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.applyVat}</label>
-                <input type="number" step="0.5" min="0" value={vatRate} onChange={(e) => setVatRate(e.target.value)} className="w-full px-2.5 py-2 rounded-lg border border-slate-300 text-sm" />
+                <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.applyVat}</label>
+                <input type="number" step="0.5" min="0" value={vatRate} onChange={(e) => setVatRate(e.target.value)} className="w-full px-2.5 py-2 rounded-xl border border-mb-line text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">{t.sales.applyWht}</label>
-                <input type="number" step="0.5" min="0" value={whtRate} onChange={(e) => setWhtRate(e.target.value)} className="w-full px-2.5 py-2 rounded-lg border border-slate-300 text-sm" />
+                <label className="block text-xs font-semibold text-mb-ink mb-1">{t.sales.applyWht}</label>
+                <input type="number" step="0.5" min="0" value={whtRate} onChange={(e) => setWhtRate(e.target.value)} className="w-full px-2.5 py-2 rounded-xl border border-mb-line text-sm" />
               </div>
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="border border-mb-line rounded-xl overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase">
+              <thead className="bg-mb-beige text-mb-ink uppercase">
                 <tr>
                   <th className="px-3 py-2 text-start">{t.common.description}</th>
                   <th className="px-3 py-2 text-end w-24">{t.common.quantity}</th>
@@ -329,7 +329,7 @@ export function BillsModule() {
                   <th className="w-8" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {lines.map((line, idx) => (
                   <tr key={idx}>
                     <td className="p-2">
@@ -341,7 +341,7 @@ export function BillsModule() {
                           next[idx].description = e.target.value;
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs"
                       />
                     </td>
                     <td className="p-2">
@@ -355,7 +355,7 @@ export function BillsModule() {
                           next[idx].quantity = e.target.value;
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs text-end tabular-nums"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs text-end tabular-nums"
                       />
                     </td>
                     <td className="p-2">
@@ -369,12 +369,12 @@ export function BillsModule() {
                           next[idx].unit_cost = e.target.value;
                           setLines(next);
                         }}
-                        className="w-full px-2 py-1.5 rounded-md border border-slate-300 text-xs text-end tabular-nums"
+                        className="w-full px-2 py-1.5 rounded-md border border-mb-line text-xs text-end tabular-nums"
                       />
                     </td>
                     <td className="p-2 text-center">
                       {lines.length > 1 && (
-                        <button type="button" onClick={() => setLines(lines.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-rose-600 cursor-pointer">
+                        <button type="button" onClick={() => setLines(lines.filter((_, i) => i !== idx))} className="text-mb-ink/70 hover:text-rose-600 cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -389,17 +389,17 @@ export function BillsModule() {
             <button
               type="button"
               onClick={() => setLines([...lines, { description: "", quantity: "1", unit_cost: "0" }])}
-              className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-mb-cocoa hover:underline cursor-pointer"
             >
               + {t.common.addLine}
             </button>
-            <div className="w-full sm:w-72 bg-slate-50 rounded-xl p-4 space-y-1.5 text-xs border border-slate-200">
+            <div className="w-full sm:w-72 bg-mb-beige rounded-xl p-4 space-y-1.5 text-xs border border-mb-line">
               <div className="flex justify-between">
-                <span className="text-slate-500">{t.common.subtotal}</span>
+                <span className="text-mb-ink">{t.common.subtotal}</span>
                 <span className="font-semibold tabular-nums">{formatAmt(subtotal, currencyCode)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">{t.common.vat} ({vatRate}%)</span>
+                <span className="text-mb-ink">{t.common.vat} ({vatRate}%)</span>
                 <span className="font-semibold tabular-nums">+{formatAmt(vatAmt, currencyCode)}</span>
               </div>
               {whtAmt > 0 && (
@@ -408,18 +408,18 @@ export function BillsModule() {
                   <span className="font-semibold tabular-nums">-{formatAmt(whtAmt, currencyCode)}</span>
                 </div>
               )}
-              <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
+              <div className="flex justify-between pt-2 border-t border-mb-line text-sm font-bold text-mb-cocoa">
                 <span>{t.common.total}</span>
                 <span className="tabular-nums">{formatAmt(netPayable, currencyCode)}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-            <button type="button" onClick={() => setOpenNew(false)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+            <button type="button" onClick={() => setOpenNew(false)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
               {t.common.cancel}
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+            <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
               {t.common.save}
             </button>
           </div>
@@ -431,16 +431,16 @@ export function BillsModule() {
         {payBill && (
           <form onSubmit={handlePay} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.amount} ({payBill.currency_code})</label>
-              <input type="number" step="0.01" required value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm tabular-nums" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.amount} ({payBill.currency_code})</label>
+              <input type="number" step="0.01" required value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm tabular-nums" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.common.date}</label>
-              <input type="date" required value={payDate} onChange={(e) => setPayDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.common.date}</label>
+              <input type="date" required value={payDate} onChange={(e) => setPayDate(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.journal.account}</label>
-              <select value={payAcctId} onChange={(e) => setPayAcctId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.journal.account}</label>
+              <select value={payAcctId} onChange={(e) => setPayAcctId(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
                 {cashAccounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.code} - {localizedAccountName(a, lang)}
@@ -448,11 +448,11 @@ export function BillsModule() {
                 ))}
               </select>
             </div>
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
-              <button type="button" onClick={() => setPayBill(null)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 cursor-pointer">
+            <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
+              <button type="button" onClick={() => setPayBill(null)} className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink cursor-pointer">
                 {t.common.cancel}
               </button>
-              <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
+              <button type="submit" className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer">
                 {t.common.confirm}
               </button>
             </div>

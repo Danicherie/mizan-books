@@ -55,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased min-h-screen bg-slate-50 text-slate-900">{children}</body>
+      <body className="antialiased min-h-screen bg-mb-beige text-mb-cocoa">{children}</body>
     </html>
   );
 }

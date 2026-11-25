@@ -83,7 +83,7 @@ export function DashboardModule() {
   }, [activeCompany]);
 
   if (loading || !data) {
-    return <div className="py-16 text-center text-sm text-slate-500">{t.common.loading}</div>;
+    return <div className="py-16 text-center text-sm text-mb-ink">{t.common.loading}</div>;
   }
 
   const maxBar = Math.max(
@@ -113,7 +113,7 @@ export function DashboardModule() {
             <button
               type="button"
               onClick={() => setActiveTab("invoices")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep transition-colors cursor-pointer"
             >
               <FilePlus2 className="w-4 h-4" />
               <span>{t.dashboard.newInvoice}</span>
@@ -121,7 +121,7 @@ export function DashboardModule() {
             <button
               type="button"
               onClick={() => setActiveTab("bills")}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-mb-paper border border-mb-line text-mb-ink hover:bg-mb-cream transition-colors cursor-pointer"
             >
               <Receipt className="w-4 h-4" />
               <span>{t.dashboard.newBill}</span>
@@ -168,28 +168,28 @@ export function DashboardModule() {
         <Card className="p-6 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
             <div>
-              <h2 className="text-base font-bold text-slate-900">{t.dashboard.revenueVsExpenses}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {t.dashboard.totalRevenue}: <span className="font-semibold text-emerald-700 tabular-nums">{formatAmt(data.kpis.totalRevenue)}</span> ·{" "}
+              <h2 className="text-base font-bold text-mb-cocoa">{t.dashboard.revenueVsExpenses}</h2>
+              <p className="text-xs text-mb-ink mt-0.5">
+                {t.dashboard.totalRevenue}: <span className="font-semibold text-mb-cocoa tabular-nums">{formatAmt(data.kpis.totalRevenue)}</span> ·{" "}
                 {t.dashboard.totalExpenses}: <span className="font-semibold text-rose-700 tabular-nums">{formatAmt(data.kpis.totalExpenses)}</span>
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-medium text-slate-600">
+            <div className="flex items-center gap-4 text-xs font-medium text-mb-ink">
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-xs bg-emerald-500 inline-block" />
+                <span className="w-3 h-3 rounded-xs bg-mb-amber inline-block" />
                 {t.dashboard.revenue}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-xs bg-slate-800 inline-block" />
+                <span className="w-3 h-3 rounded-xs bg-mb-cocoa inline-block" />
                 {t.dashboard.expenses}
               </span>
             </div>
           </div>
 
           {data.monthlySeries.length === 0 ? (
-            <div className="h-52 flex items-center justify-center text-sm text-slate-400">{t.common.noData}</div>
+            <div className="h-52 flex items-center justify-center text-sm text-mb-ink/70">{t.common.noData}</div>
           ) : (
-            <div className="h-56 flex items-end justify-around gap-3 pt-4 pb-2 border-b border-slate-200">
+            <div className="h-56 flex items-end justify-around gap-3 pt-4 pb-2 border-b border-mb-line">
               {data.monthlySeries.map((m) => {
                 const revH = Math.max(4, Math.round((Math.max(0, m.revenue) / maxBar) * 180));
                 const expH = Math.max(4, Math.round((Math.max(0, m.expenses) / maxBar) * 180));
@@ -199,19 +199,19 @@ export function DashboardModule() {
                       <div className="group relative flex flex-col items-center">
                         <div
                           style={{ height: `${revH}px` }}
-                          className="w-7 sm:w-9 rounded-t-md bg-emerald-500 hover:bg-emerald-600 transition-all"
+                          className="w-7 sm:w-9 rounded-t-md bg-mb-amber hover:bg-mb-amber-deep transition-all"
                           title={`${t.dashboard.revenue}: ${formatAmt(m.revenue)}`}
                         />
                       </div>
                       <div className="group relative flex flex-col items-center">
                         <div
                           style={{ height: `${expH}px` }}
-                          className="w-7 sm:w-9 rounded-t-md bg-slate-800 hover:bg-slate-900 transition-all"
+                          className="w-7 sm:w-9 rounded-t-md bg-mb-cocoa hover:bg-[#3a2418] transition-all"
                           title={`${t.dashboard.expenses}: ${formatAmt(m.expenses)}`}
                         />
                       </div>
                     </div>
-                    <span className="text-xs font-medium text-slate-600 mt-2 tabular-nums text-center">
+                    <span className="text-xs font-medium text-mb-ink mt-2 tabular-nums text-center">
                       {formatMonth(m.month, calendar, lang)}
                     </span>
                   </div>
@@ -224,46 +224,46 @@ export function DashboardModule() {
         {/* Quick Actions & Low Stock */}
         <div className="space-y-6">
           <Card className="p-5">
-            <h2 className="text-sm font-bold text-slate-900 mb-3">{t.dashboard.quickActions}</h2>
+            <h2 className="text-sm font-bold text-mb-cocoa mb-3">{t.dashboard.quickActions}</h2>
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => setActiveTab("invoices")}
-                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-colors text-start cursor-pointer"
+                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-mb-line hover:border-mb-amber hover:bg-mb-cream/60 transition-colors text-start cursor-pointer"
               >
-                <FilePlus2 className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-semibold text-slate-800">{t.dashboard.newInvoice}</span>
+                <FilePlus2 className="w-4 h-4 text-mb-cocoa" />
+                <span className="text-xs font-semibold text-mb-cocoa">{t.dashboard.newInvoice}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("bills")}
-                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-colors text-start cursor-pointer"
+                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-mb-line hover:border-mb-amber hover:bg-mb-cream/60 transition-colors text-start cursor-pointer"
               >
                 <Receipt className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-semibold text-slate-800">{t.dashboard.newBill}</span>
+                <span className="text-xs font-semibold text-mb-cocoa">{t.dashboard.newBill}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("journals")}
-                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-colors text-start cursor-pointer"
+                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-mb-line hover:border-mb-amber hover:bg-mb-cream/60 transition-colors text-start cursor-pointer"
               >
                 <BookOpen className="w-4 h-4 text-indigo-600" />
-                <span className="text-xs font-semibold text-slate-800">{t.dashboard.newJournalEntry}</span>
+                <span className="text-xs font-semibold text-mb-cocoa">{t.dashboard.newJournalEntry}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("payroll")}
-                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-colors text-start cursor-pointer"
+                className="flex flex-col items-start gap-2 p-3 rounded-xl border border-mb-line hover:border-mb-amber hover:bg-mb-cream/60 transition-colors text-start cursor-pointer"
               >
                 <Users className="w-4 h-4 text-amber-600" />
-                <span className="text-xs font-semibold text-slate-800">{t.dashboard.runPayroll}</span>
+                <span className="text-xs font-semibold text-mb-cocoa">{t.dashboard.runPayroll}</span>
               </button>
             </div>
           </Card>
 
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-mb-cocoa flex items-center gap-2">
                 <Package className="w-4 h-4 text-amber-600" />
                 <span>{t.dashboard.inventoryAlerts}</span>
               </h2>
@@ -272,7 +272,7 @@ export function DashboardModule() {
               </span>
             </div>
             {data.lowStockItems.length === 0 ? (
-              <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-xs text-mb-cocoa bg-mb-cream p-3 rounded-xl">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{t.dashboard.allHealthy}</span>
               </div>
@@ -281,11 +281,11 @@ export function DashboardModule() {
                 {data.lowStockItems.map((it) => (
                   <div
                     key={it.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-rose-50/70 border border-rose-100 text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/70 border border-rose-100 text-xs"
                   >
                     <div className="min-w-0">
-                      <div className="font-semibold text-slate-900 truncate">{it.name}</div>
-                      <div className="text-slate-500">{it.sku}</div>
+                      <div className="font-semibold text-mb-cocoa truncate">{it.name}</div>
+                      <div className="text-mb-ink">{it.sku}</div>
                     </div>
                     <div className="text-end shrink-0 ms-2">
                       <span className="inline-flex items-center gap-1 font-bold text-rose-700 tabular-nums">
@@ -304,19 +304,19 @@ export function DashboardModule() {
       {/* Bottom Split: Open Invoices + Recent GL */}
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
         <Card className="overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">{t.dashboard.overdueInvoices}</h2>
+          <div className="px-5 py-4 border-b border-mb-line flex items-center justify-between">
+            <h2 className="text-sm font-bold text-mb-cocoa">{t.dashboard.overdueInvoices}</h2>
             <button
               type="button"
               onClick={() => setActiveTab("invoices")}
-              className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-mb-cocoa hover:underline cursor-pointer"
             >
               {t.common.view}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+              <thead className="bg-mb-beige text-xs text-mb-ink uppercase">
                 <tr>
                   <th className="px-4 py-2.5 text-start">{t.sales.invoiceNumber}</th>
                   <th className="px-4 py-2.5 text-start">{t.sales.customer}</th>
@@ -325,19 +325,19 @@ export function DashboardModule() {
                   <th className="px-4 py-2.5 text-center">{t.common.status}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {data.openInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                    <td colSpan={5} className="px-4 py-8 text-center text-mb-ink/70">
                       {t.common.noData}
                     </td>
                   </tr>
                 ) : (
                   data.openInvoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-900">{inv.invoice_number}</td>
-                      <td className="px-4 py-3 text-slate-700 truncate max-w-[160px]">{inv.customer_name}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDt(inv.due_date)}</td>
+                    <tr key={inv.id} className="hover:bg-mb-cream/70">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-mb-cocoa">{inv.invoice_number}</td>
+                      <td className="px-4 py-3 text-mb-ink truncate max-w-[160px]">{inv.customer_name}</td>
+                      <td className="px-4 py-3 text-xs text-mb-ink whitespace-nowrap">{formatDt(inv.due_date)}</td>
                       <td className="px-4 py-3 text-end font-semibold tabular-nums">
                         {formatAmt(inv.total - inv.amount_paid, inv.currency_code)}
                       </td>
@@ -353,19 +353,19 @@ export function DashboardModule() {
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">{t.dashboard.recentTransactions}</h2>
+          <div className="px-5 py-4 border-b border-mb-line flex items-center justify-between">
+            <h2 className="text-sm font-bold text-mb-cocoa">{t.dashboard.recentTransactions}</h2>
             <button
               type="button"
               onClick={() => setActiveTab("journals")}
-              className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-mb-cocoa hover:underline cursor-pointer"
             >
               {t.common.view}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+              <thead className="bg-mb-beige text-xs text-mb-ink uppercase">
                 <tr>
                   <th className="px-4 py-2.5 text-start">{t.journal.entryNumber}</th>
                   <th className="px-4 py-2.5 text-start">{t.common.date}</th>
@@ -373,12 +373,12 @@ export function DashboardModule() {
                   <th className="px-4 py-2.5 text-end">{t.common.amount}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-mb-line/70">
                 {data.recentJournals.map((je) => (
-                  <tr key={je.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-emerald-800">{je.entry_number}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDt(je.entry_date)}</td>
-                    <td className="px-4 py-3 text-slate-700 truncate max-w-[200px]">{je.description}</td>
+                  <tr key={je.id} className="hover:bg-mb-cream/70">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-mb-cocoa">{je.entry_number}</td>
+                    <td className="px-4 py-3 text-xs text-mb-ink whitespace-nowrap">{formatDt(je.entry_date)}</td>
+                    <td className="px-4 py-3 text-mb-ink truncate max-w-[200px]">{je.description}</td>
                     <td className="px-4 py-3 text-end font-semibold tabular-nums whitespace-nowrap">
                       {formatAmt(je.total_amount)}
                     </td>

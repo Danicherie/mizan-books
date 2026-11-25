@@ -2,7 +2,7 @@
 
 @theme {
   --color-mb-amber: #e0973a;
-  --color-mb-amber-deep: #c9842c;
+  --color-mb-amber-deep: #d4923a;
   --color-mb-cream: #f7e9cf;
   --color-mb-cocoa: #4a2e1f;
   --color-mb-ink: #6e4b38;
@@ -12,6 +12,17 @@
 }
 
 :root {
+  --mb-amber: #e0973a;
+  --mb-amber-deep: #d4923a;
+  --mb-cream: #f7e9cf;
+  --mb-cocoa: #4a2e1f;
+  --mb-ink: #6e4b38;
+  --mb-beige: #f6ebdd;
+  --mb-line: #e6d3bc;
+  --mb-paper: #fffbf6;
+  --mb-radius: 14px;
+  --mb-shadow: 0 12px 32px rgba(74, 46, 31, 0.08);
+  --mb-shadow-soft: 0 4px 16px rgba(74, 46, 31, 0.06);
   --brand-emerald: #00875a;
   --brand-emerald-dark: #006644;
   --brand-mint: #00d639;
@@ -19,8 +30,8 @@
 
 body {
   font-family: "Plus Jakarta Sans", "Noto Sans Ethiopic", "Noto Sans Arabic", "Kefa", "Nyala", "SF Arabic", "Geeza Pro", system-ui, -apple-system, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--mb-beige);
+  color: var(--mb-cocoa);
 }
 
 .tabular-nums {
@@ -48,6 +59,74 @@ summary::-webkit-details-marker {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* Signed-in app, sign-in, and operator pages share one warm surface. */
+.mb-app {
+  background-color: var(--mb-beige);
+  color: var(--mb-cocoa);
+}
+
+.mb-app .shadow-xs,
+.mb-app .shadow-sm {
+  box-shadow: var(--mb-shadow-soft);
+}
+
+.mb-app table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.mb-app table thead th {
+  background: #f3e4cf;
+  color: var(--mb-cocoa);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.mb-app table tbody tr:nth-child(even) {
+  background-color: rgba(247, 233, 207, 0.55);
+}
+
+.mb-app table tbody tr:hover {
+  background-color: rgba(224, 151, 58, 0.14);
+}
+
+.mb-app table .text-end,
+.mb-app table .tabular-nums {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.mb-app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.mb-app select,
+.mb-app textarea {
+  background-color: var(--mb-paper);
+  color: var(--mb-cocoa);
+  border-color: var(--mb-line);
+  border-radius: 12px;
+}
+
+.mb-app input:focus,
+.mb-app select:focus,
+.mb-app textarea:focus,
+.mb-app button:focus-visible,
+.mb-app a:focus-visible {
+  outline: 2px solid var(--mb-cocoa);
+  outline-offset: 2px;
+}
+
+.mb-app input:focus,
+.mb-app select:focus,
+.mb-app textarea:focus {
+  border-color: var(--mb-cocoa);
+  box-shadow: none;
+}
+
+.mb-app .py-12.text-center,
+.mb-app .py-16.text-center,
+.mb-app .p-10.text-center,
+.mb-app .h-52.flex {
+  color: var(--mb-ink);
 }
 
 @media print {

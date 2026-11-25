@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   ShieldCheck,
-  Globe,
   ArrowRight,
   Calculator,
   Eye,
@@ -12,7 +11,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { MizanLockup } from "@/components/brand/MizanLogo";
-import { LANGUAGES } from "@/lib/i18n";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
 import { useApp } from "./AppContext";
 
@@ -123,44 +122,25 @@ export function LoginView() {
   }
 
   return (
-    <div className="min-h-screen bg-mb-beige flex flex-col justify-between p-4 sm:p-8">
-      {/* Top Language Bar */}
+    <div className="mb-app min-h-screen bg-mb-beige flex flex-col justify-between p-4 sm:p-8">
       <div className="max-w-5xl w-full mx-auto flex flex-wrap items-center justify-between gap-4">
-        <MizanLockup name={t.appName} tagline={t.appTagline} href="/" markClassName="h-11 w-11" nameClassName="text-lg" />
-
-        <div className="flex flex-wrap items-center gap-1 bg-mb-paper border border-mb-line p-1 rounded-xl max-w-full">
-          <Globe className="w-4 h-4 text-mb-ink mx-1.5 shrink-0" aria-hidden="true" />
-          {LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              type="button"
-              onClick={() => setLang(l.code)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                lang === l.code
-                  ? "bg-mb-amber text-mb-cocoa shadow-xs"
-                  : "text-mb-ink hover:text-mb-cocoa hover:bg-mb-cream"
-              }`}
-            >
-              {l.nativeLabel}
-            </button>
-          ))}
-        </div>
+        <MizanLockup name={t.appName} tagline={t.appTagline} href="/" markClassName="h-12 w-12" nameClassName="text-lg" />
+        <LanguageSelector lang={lang} onChange={setLang} label={t.marketing.languageLabel} />
       </div>
 
-      {/* Main Card */}
-      <div className="max-w-5xl w-full mx-auto my-6 grid lg:grid-cols-12 gap-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-mb-line">
+      <div className="max-w-5xl w-full mx-auto my-6 grid lg:grid-cols-12 gap-0 bg-mb-paper rounded-3xl shadow-[0_24px_60px_rgba(74,46,31,0.1)] overflow-hidden border border-mb-line">
         {/* Left: Sign In or 30-Day Free Trial Sign Up */}
         <div className="lg:col-span-7 p-6 sm:p-10">
           {/* Mode Tabs */}
-          <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 mb-6">
+          <div className="inline-flex bg-mb-cream p-1 rounded-xl border border-mb-line mb-6">
             <button
               type="button"
               onClick={() => {
                 setMode("signin");
                 setError("");
               }}
-              className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                mode === "signin" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                mode === "signin" ? "bg-mb-paper text-mb-cocoa shadow-xs" : "text-mb-ink hover:text-mb-cocoa"
               }`}
             >
               {t.auth.signInTab}
@@ -172,7 +152,7 @@ export function LoginView() {
                 setMode("signup");
                 setError("");
               }}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 mode === "signup"
                   ? "bg-mb-amber text-mb-cocoa shadow-xs"
                   : "text-mb-cocoa hover:bg-mb-cream"
@@ -186,12 +166,12 @@ export function LoginView() {
 
           {(signupEnabled ? mode : "signin") === "signin" ? (
             <>
-              <h1 className="text-2xl font-bold text-slate-900">{t.auth.title}</h1>
-              <p className="text-sm text-slate-500 mt-1.5">{t.auth.subtitle}</p>
+              <h1 className="text-2xl font-bold text-mb-cocoa">{t.auth.title}</h1>
+              <p className="text-sm text-mb-ink mt-1.5">{t.auth.subtitle}</p>
 
               <form onSubmit={handleSignIn} className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-mb-ink mb-1.5">
                     {t.auth.email}
                   </label>
                   <input
@@ -199,12 +179,12 @@ export function LoginView() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber focus:border-mb-amber"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber focus:border-mb-amber"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-mb-ink mb-1.5">
                     {t.auth.password}
                   </label>
                   <input
@@ -212,7 +192,7 @@ export function LoginView() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber focus:border-mb-amber"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber focus:border-mb-amber"
                   />
                 </div>
 
@@ -232,7 +212,7 @@ export function LoginView() {
                 </button>
               </form>
 
-              <div className="mt-5 text-xs text-slate-500 flex items-center gap-1.5">
+              <div className="mt-5 text-xs text-mb-ink flex items-center gap-1.5">
                 <span>{t.auth.newToMizan}</span>
                 <button
                   type="button"
@@ -249,47 +229,47 @@ export function LoginView() {
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{t.auth.freeTrialBadge}</span>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900">{t.auth.freeTrialTitle}</h1>
-              <p className="text-sm text-slate-500 mt-1">{t.auth.freeTrialSubtitle}</p>
+              <h1 className="text-2xl font-bold text-mb-cocoa">{t.auth.freeTrialTitle}</h1>
+              <p className="text-sm text-mb-ink mt-1">{t.auth.freeTrialSubtitle}</p>
 
               <form onSubmit={handleSignUp} className="mt-5 space-y-3.5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.auth.fullName} *</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.auth.fullName} *</label>
                     <input
                       required
                       placeholder="e.g. Dawit Alemu"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
+                      className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.auth.companyName} *</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.auth.companyName} *</label>
                     <input
                       required
                       placeholder="e.g. Rift Valley Trading PLC"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
+                      className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.auth.email} *</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.auth.email} *</label>
                     <input
                       type="email"
                       required
                       placeholder="you@company.com"
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
+                      className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.auth.password} *</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.auth.password} *</label>
                     <input
                       type="password"
                       required
@@ -297,18 +277,18 @@ export function LoginView() {
                       placeholder={t.auth.passwordHint}
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
+                      className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.baseCurrency}</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.baseCurrency}</label>
                     <select
                       value={baseCurrency}
                       onChange={(e) => setBaseCurrency(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
                     >
                       {SUPPORTED_CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code}>
@@ -318,11 +298,11 @@ export function LoginView() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.taxRegime}</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.taxRegime}</label>
                     <select
                       value={taxRegime}
                       onChange={(e) => setTaxRegime(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
                     >
                       {TAX_REGIMES.map((tr) => (
                         <option key={tr.code} value={tr.code}>
@@ -347,10 +327,10 @@ export function LoginView() {
                   <span>{submitting ? t.auth.creatingAccount : t.auth.startFreeTrial}</span>
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" />
                 </button>
-                <p className="text-[11px] text-center text-slate-500">{t.auth.noCardRequired}</p>
+                <p className="text-[11px] text-center text-mb-ink">{t.auth.noCardRequired}</p>
               </form>
 
-              <div className="mt-4 text-xs text-slate-500 flex items-center gap-1.5">
+              <div className="mt-4 text-xs text-mb-ink flex items-center gap-1.5">
                 <span>{t.auth.alreadyHaveAccount}</span>
                 <button
                   type="button"
@@ -365,7 +345,7 @@ export function LoginView() {
         </div>
 
         {/* Right: Free Trial Benefits + Instant Demo Access */}
-        <div className="lg:col-span-5 bg-slate-50 p-6 sm:p-8 border-t lg:border-t-0 lg:border-s border-slate-200 flex flex-col justify-between gap-6">
+        <div className="lg:col-span-5 bg-mb-beige p-6 sm:p-8 border-t lg:border-t-0 lg:border-s border-mb-line flex flex-col justify-between gap-6">
           {/* 30-Day Free Trial Highlights */}
           <div className="bg-mb-cocoa text-mb-cream rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between gap-2 mb-3">
@@ -395,61 +375,61 @@ export function LoginView() {
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-mb-cream text-mb-cocoa">
               {t.auth.quickDemo}
             </span>
-            <p className="text-xs text-slate-600 mt-2">{t.auth.quickDemoHint}</p>
+            <p className="text-xs text-mb-ink mt-2">{t.auth.quickDemoHint}</p>
 
             <div className="mt-3 space-y-2">
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => quickLogin("admin@mizanbooks.com")}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-mb-paper border border-mb-line hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-mb-cream text-mb-cocoa flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-mb-cream text-mb-cocoa flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900">{t.auth.adminDemo}</div>
-                    <div className="text-[11px] text-slate-500 truncate">admin@mizanbooks.com</div>
+                    <div className="text-xs font-semibold text-mb-cocoa">{t.auth.adminDemo}</div>
+                    <div className="text-[11px] text-mb-ink truncate">admin@mizanbooks.com</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 rtl:rotate-180 shrink-0" />
+                <ArrowRight className="w-4 h-4 text-mb-ink/70 rtl:rotate-180 shrink-0" />
               </button>
 
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => quickLogin("accountant@mizanbooks.com")}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-mb-paper border border-mb-line hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
                     <Calculator className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900">{t.auth.accountantDemo}</div>
-                    <div className="text-[11px] text-slate-500 truncate">accountant@mizanbooks.com</div>
+                    <div className="text-xs font-semibold text-mb-cocoa">{t.auth.accountantDemo}</div>
+                    <div className="text-[11px] text-mb-ink truncate">accountant@mizanbooks.com</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 rtl:rotate-180 shrink-0" />
+                <ArrowRight className="w-4 h-4 text-mb-ink/70 rtl:rotate-180 shrink-0" />
               </button>
 
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => quickLogin("viewer@mizanbooks.com")}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-mb-paper border border-mb-line hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-mb-cream text-mb-ink flex items-center justify-center shrink-0">
                     <Eye className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900">{t.auth.viewerDemo}</div>
-                    <div className="text-[11px] text-slate-500 truncate">viewer@mizanbooks.com</div>
+                    <div className="text-xs font-semibold text-mb-cocoa">{t.auth.viewerDemo}</div>
+                    <div className="text-[11px] text-mb-ink truncate">viewer@mizanbooks.com</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 rtl:rotate-180 shrink-0" />
+                <ArrowRight className="w-4 h-4 text-mb-ink/70 rtl:rotate-180 shrink-0" />
               </button>
             </div>
           </div>

@@ -119,7 +119,7 @@ export function ChartOfAccountsModule() {
               <button
                 type="button"
                 onClick={() => setOpenAdd(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t.coa.addAccount}</span>
@@ -133,13 +133,13 @@ export function ChartOfAccountsModule() {
       <Card className="p-4 mb-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute start-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-mb-ink/70 absolute start-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder={t.common.search}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full ps-9 pe-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full ps-9 pe-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-cocoa"
             />
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -148,10 +148,10 @@ export function ChartOfAccountsModule() {
                 key={tp}
                 type="button"
                 onClick={() => setTypeFilter(tp)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                   typeFilter === tp
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-mb-cocoa text-mb-cream"
+                    : "bg-mb-cream text-mb-ink hover:bg-mb-beige"
                 }`}
               >
                 {tp === "ALL" ? t.common.all : typeLabel(tp)}
@@ -165,7 +165,7 @@ export function ChartOfAccountsModule() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+            <thead className="bg-mb-beige text-xs text-mb-ink uppercase border-b border-mb-line">
               <tr>
                 <th className="px-4 py-3 text-start">{t.coa.code}</th>
                 <th className="px-4 py-3 text-start">{t.coa.accountName}</th>
@@ -176,36 +176,36 @@ export function ChartOfAccountsModule() {
                 <th className="px-4 py-3 text-end">{t.coa.currentBalance}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-mb-line/70">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.loading}
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-mb-ink/70">
                     {t.common.noData}
                   </td>
                 </tr>
               ) : (
                 filtered.map((acc) => (
-                  <tr key={acc.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3 font-mono font-bold text-slate-800">{acc.code}</td>
+                  <tr key={acc.id} className="hover:bg-mb-cream/70">
+                    <td className="px-4 py-3 font-mono font-bold text-mb-cocoa">{acc.code}</td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{localizedAccountName(acc, lang)}</div>
-                      {lang !== "en" && <div className="text-xs text-slate-400">{acc.name}</div>}
+                      <div className="font-semibold text-mb-cocoa">{localizedAccountName(acc, lang)}</div>
+                      {lang !== "en" && <div className="text-xs text-mb-ink/70">{acc.name}</div>}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={acc.type} label={typeLabel(acc.type)} />
                     </td>
-                    <td className="px-4 py-3 text-xs font-medium text-slate-600">
+                    <td className="px-4 py-3 text-xs font-medium text-mb-ink">
                       {acc.normal_balance === "DEBIT" ? t.coa.debit : t.coa.credit}
                     </td>
-                    <td className="px-4 py-3 text-end tabular-nums text-slate-600">{formatAmt(acc.total_debit)}</td>
-                    <td className="px-4 py-3 text-end tabular-nums text-slate-600">{formatAmt(acc.total_credit)}</td>
-                    <td className="px-4 py-3 text-end font-bold tabular-nums text-slate-900">
+                    <td className="px-4 py-3 text-end tabular-nums text-mb-ink">{formatAmt(acc.total_debit)}</td>
+                    <td className="px-4 py-3 text-end tabular-nums text-mb-ink">{formatAmt(acc.total_credit)}</td>
+                    <td className="px-4 py-3 text-end font-bold tabular-nums text-mb-cocoa">
                       {formatAmt(acc.balance)}
                     </td>
                   </tr>
@@ -221,34 +221,34 @@ export function ChartOfAccountsModule() {
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.coa.code} *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.coa.code} *</label>
               <input
                 required
                 placeholder="e.g. 6400"
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.coa.accountName} (English) *</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.coa.accountName} (English) *</label>
               <input
                 required
                 placeholder="e.g. Marketing & Advertising"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.coa.type}</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.coa.type}</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as AccountRow["type"] })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper"
               >
                 <option value="ASSET">{t.coa.asset}</option>
                 <option value="LIABILITY">{t.coa.liability}</option>
@@ -258,57 +258,57 @@ export function ChartOfAccountsModule() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">{t.coa.subtype}</label>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.coa.subtype}</label>
               <input
                 value={form.subtype}
                 onChange={(e) => setForm({ ...form, subtype: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-3">{t.coa.localizedNames}</p>
+          <div className="pt-2 border-t border-mb-line">
+            <p className="text-xs font-semibold text-mb-ink uppercase mb-3">{t.coa.localizedNames}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 placeholder="አማርኛ (Amharic)"
                 value={form.name_am}
                 onChange={(e) => setForm({ ...form, name_am: e.target.value })}
-                className="px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
               <input
                 placeholder="Afaan Oromoo"
                 value={form.name_om}
                 onChange={(e) => setForm({ ...form, name_om: e.target.value })}
-                className="px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
               <input
                 placeholder="Soomaali"
                 value={form.name_so}
                 onChange={(e) => setForm({ ...form, name_so: e.target.value })}
-                className="px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
               <input
                 dir="rtl"
                 placeholder="العربية (Arabic)"
                 value={form.name_ar}
                 onChange={(e) => setForm({ ...form, name_ar: e.target.value })}
-                className="px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                className="px-3 py-2 rounded-xl border border-mb-line text-sm"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+          <div className="flex justify-end gap-2 pt-3 border-t border-mb-line">
             <button
               type="button"
               onClick={() => setOpenAdd(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-mb-line text-mb-ink hover:bg-mb-cream cursor-pointer"
             >
               {t.common.cancel}
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-mb-amber text-mb-cocoa hover:bg-mb-amber-deep cursor-pointer"
             >
               {t.common.save}
             </button>
