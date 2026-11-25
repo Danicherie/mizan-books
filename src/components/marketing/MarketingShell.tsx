@@ -145,7 +145,7 @@ export function MarketingShell({
                     key={link.href}
                     href={link.href}
                     onClick={() => setMenuOpen(false)}
-                    className={`rounded-2xl px-3 py-3 text-base font-medium text-mb-cocoa hover:bg-mb-cream ${focusRing}`}
+                    className={`rounded-2xl px-3 py-3 text-base font-medium text-mb-cocoa break-words hover:bg-mb-cream ${focusRing}`}
                   >
                     {link.label}
                   </a>
@@ -205,12 +205,12 @@ export function MarketingShell({
                 </li>
                 <li>
                   <a className={`text-mb-ink hover:text-mb-cocoa ${focusRing}`} href="/privacy">
-                    {t.marketing.privacy} ({t.marketing.draft})
+                    {t.marketing.privacy}
                   </a>
                 </li>
                 <li>
                   <a className={`text-mb-ink hover:text-mb-cocoa ${focusRing}`} href="/terms">
-                    {t.marketing.terms} ({t.marketing.draft})
+                    {t.marketing.terms}
                   </a>
                 </li>
               </ul>

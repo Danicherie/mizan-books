@@ -23,6 +23,20 @@ export function isRtl(lang: Lang): boolean {
   return lang === "ar";
 }
 
+export function currencyName(t: Dictionary, code: string, fallback: string): string {
+  if (Object.prototype.hasOwnProperty.call(t.currencies, code)) {
+    return t.currencies[code as keyof Dictionary["currencies"]];
+  }
+  return fallback;
+}
+
+export function taxRegimeName(t: Dictionary, code: string, fallback: string): string {
+  if (Object.prototype.hasOwnProperty.call(t.taxRegimes, code)) {
+    return t.taxRegimes[code as keyof Dictionary["taxRegimes"]];
+  }
+  return fallback;
+}
+
 export function localizedAccountName(
   account: {
     name: string;

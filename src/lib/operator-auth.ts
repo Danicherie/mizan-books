@@ -85,6 +85,31 @@ export async function clearOperatorCookie(): Promise<void> {
   jar.delete(OPERATOR_COOKIE);
 }
 
+export function operatorTokenFromRequest(request: Request): string | null {
+  const header = request.headers.get("cookie") ?? "";
+  for (const part of header.split(";")) {
+    const trimmed = part.trim();
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    if (trimmed.slice(0, eq) !== OPERATOR_COOKIE) continue;
+    const raw = trimmed.slice(eq + 1);
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  return null;
+}
+
+/** Route handlers can read the operator cookie from the request. Tests do the same. */
+export function requestHasOperatorSession(request: Request): boolean {
+  if (!operatorAdminEnabled()) return false;
+  const token = operatorTokenFromRequest(request);
+  if (!token) return false;
+  return verifyOperatorSessionToken(token);
+}
+
 export async function hasOperatorSession(): Promise<boolean> {
   if (!operatorAdminEnabled()) return false;
   try {

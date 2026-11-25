@@ -104,6 +104,10 @@ export interface Dictionary {
     statusExpired: string;
     statusPaused: string;
     paidUntilLabel: string;
+    namePlaceholder: string;
+    companyPlaceholder: string;
+    emailPlaceholder: string;
+    mobilePlatforms: string;
   };
   common: {
     save: string;
@@ -356,6 +360,24 @@ export interface Dictionary {
     password: string;
     auditLogTab: string;
   };
+  currencies: {
+    ETB: string;
+    USD: string;
+    SOS: string;
+    KES: string;
+    SAR: string;
+    AED: string;
+    EUR: string;
+  };
+  taxRegimes: {
+    ET_STANDARD: string;
+    SA_VAT: string;
+    UAE_VAT: string;
+    KE_VAT: string;
+    SO_CUSTOM: string;
+    EXEMPT: string;
+  };
+  errors: ApiErrorCopy;
   marketing: {
     skipToContent: string;
     navFeatures: string;
@@ -398,7 +420,6 @@ export interface Dictionary {
     footerLegal: string;
     privacy: string;
     terms: string;
-    draft: string;
     rights: string;
     aboutTitle: string;
     aboutLead: string;
@@ -410,16 +431,87 @@ export interface Dictionary {
     contactEmail: string;
     contactMessage: string;
     contactSubmit: string;
-    contactNotice: string;
+    contactSending: string;
+    contactSuccess: string;
+    contactInvalid: string;
+    contactRateLimited: string;
+    contactError: string;
+    contactWebsite: string;
+    contactEmailHeading: string;
+    operatorLine: string;
+    lastUpdated: string;
     privacyTitle: string;
-    privacyDraft: string;
     privacyIntro: string;
     privacyBlocks: MarketingBlock[];
     termsTitle: string;
-    termsDraft: string;
     termsIntro: string;
     termsBlocks: MarketingBlock[];
   };
+}
+
+/** English values for the fixed messages match the text the API returns. */
+export interface ApiErrorCopy {
+  passwordShort: string;
+  passwordLong: string;
+  passwordSample: string;
+  signupFields: string;
+  userFields: string;
+  emailExists: string;
+  readOnly: string;
+  adminRequired: string;
+  noCompanyAccess: string;
+  noCompany: string;
+  forbidden: string;
+  unauthorized: string;
+  subscriptionPaused: string;
+  subscriptionNeeded: string;
+  recordExists: string;
+  requestFailed: string;
+  crossSite: string;
+  codeNameType: string;
+  vendorLinesRequired: string;
+  vendorNotFound: string;
+  billNotFound: string;
+  customerLinesRequired: string;
+  customerNotFound: string;
+  invoiceNotFound: string;
+  customerNameRequired: string;
+  vendorNameRequired: string;
+  companyNameRequired: string;
+  companyNotFound: string;
+  skuNameRequired: string;
+  itemNotFound: string;
+  adjustmentRequired: string;
+  journalDateRequired: string;
+  journalLineCount: string;
+  employeeNameRequired: string;
+  payrollPeriodRequired: string;
+  noActiveEmployees: string;
+  unknownAction: string;
+  invalidRequest: string;
+  subscriptionOwner: string;
+  currencyRateRequired: string;
+  taxRegimeUnknown: string;
+  tinText: string;
+  invalidAction: string;
+  demoDisabled: string;
+  invalidDemo: string;
+  debitCreditNonNegative: string;
+  lineBothSides: string;
+  journalTwoLines: string;
+  amountFinite: string;
+  amountEmpty: string;
+  amountTooLarge: string;
+  minorUnits: string;
+  moneyNotWhole: string;
+  moneyUnexpected: string;
+  paymentRange: string;
+  percentRange: string;
+  outOfBalance: string;
+  accountInvalid: string;
+  accountMissing: string;
+  accountOtherCompany: string;
+  invalidMoney: string;
 }
 
 export interface MarketingBlock {

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Mail, Phone, Building2 } from "lucide-react";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { currencyName } from "@/lib/i18n";
 import { useApp } from "../AppContext";
 import { Card, Modal, PageHeader } from "../ui";
 
@@ -193,7 +194,7 @@ export function ContactsModule({ mode }: { mode: "customers" | "vendors" }) {
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.code} — {c.name}
+                    {c.code} — {currencyName(t, c.code, c.name)}
                   </option>
                 ))}
               </select>

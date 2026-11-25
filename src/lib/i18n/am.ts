@@ -1,5 +1,5 @@
 import type { Dictionary } from "./types";
-import { en } from "./en";
+import { amPublic } from "./public/am";
 
 export const am: Dictionary = {
   appName: "ሚዛን ቡክስ",
@@ -89,6 +89,10 @@ export const am: Dictionary = {
     statusExpired: "የደንበኝነት ክፍያ ያስፈልጋል",
     statusPaused: "ቆሟል",
     paidUntilLabel: "የተከፈለበት እስከ",
+    namePlaceholder: "ለምሳሌ፦ ዳዊት አለሙ",
+    companyPlaceholder: "ለምሳሌ፦ የስምጥ ሸለቆ ንግድ ኃ.የተ.የግ.ማ",
+    emailPlaceholder: "you@company.com",
+    mobilePlatforms: "iOS እና Android",
   },
   common: {
     save: "አስቀምጥ",
@@ -341,6 +345,5 @@ export const am: Dictionary = {
     password: "የይለፍ ቃል",
     auditLogTab: "የኦዲት መዝገብ",
   },
-  // English fallback until a reviewed Amharic marketing translation is added.
-  marketing: en.marketing,
+  ...amPublic,
 };

@@ -20,6 +20,7 @@ const ENV_KEYS = [
   "COOKIE_SECURE",
   "BACKUP_DIR",
   "BACKUP_RETENTION_DAYS",
+  "CONTACT_EMAIL",
 ] as const;
 
 export function useTempDatabase() {
@@ -36,6 +37,7 @@ export function useTempDatabase() {
   delete process.env.INITIAL_COMPANY_CURRENCY;
   delete process.env.BACKUP_DIR;
   delete process.env.SIGNUP_ENABLED;
+  delete process.env.CONTACT_EMAIL;
   delete process.env.OPERATOR_PASSWORD;
   delete process.env.ALLOWED_ORIGIN;
   delete process.env.COOKIE_SECURE;

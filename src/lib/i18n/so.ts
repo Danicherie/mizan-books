@@ -1,5 +1,5 @@
 import type { Dictionary } from "./types";
-import { en } from "./en";
+import { soPublic } from "./public/so";
 
 export const so: Dictionary = {
   appName: "Mizan Books",
@@ -89,6 +89,10 @@ export const so: Dictionary = {
     statusExpired: "Rukhsad ayaa loo baahan yahay",
     statusPaused: "La hakiyay",
     paidUntilLabel: "La bixiyay ilaa",
+    namePlaceholder: "tusaale: Daawit Calemu",
+    companyPlaceholder: "tusaale: Rift Valley Trading PLC",
+    emailPlaceholder: "you@company.com",
+    mobilePlatforms: "iOS iyo Android",
   },
   common: {
     save: "Kaydi",
@@ -341,6 +345,5 @@ export const so: Dictionary = {
     password: "Furaha Sirta",
     auditLogTab: "Diiwaanka Hantidhawrka",
   },
-  // English fallback until a reviewed Somali marketing translation is added.
-  marketing: en.marketing,
+  ...soPublic,
 };

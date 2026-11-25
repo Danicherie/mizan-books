@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Languages and legal pages
+
+- Amharic, Afaan Oromo, and Somali now cover the marketing site, the About, Contact, Privacy, and Terms pages, and the messages the app shows when a save or sign-up is rejected. English and Arabic use the same finished pages.
+- The Privacy Policy and Terms of Service are no longer drafts. They name the operator, Daniel Fessehaye in London, and were last updated on 25 November 2026. They do not invent an email address, a phone number, or a company number.
+- The contact form saves a message in the database. It is rate limited, checks the browser origin, and ignores a hidden field that people do not fill in. The operator reads, marks, or deletes those messages on `/admin`.
+- If `CONTACT_EMAIL` is set, that address is shown on the Contact page. It is optional. The form does not send mail.
+
 ### Free trial and subscription
 
 - Every company now has a 30-day free trial from the day it is created.
