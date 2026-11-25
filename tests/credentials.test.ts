@@ -40,7 +40,7 @@ test("opening the database the way the health check does does not create demo us
   process.env.ENABLE_DEMO_LOGIN = "false";
   try {
     const healthSource = fs.readFileSync(new URL("../src/app/api/health/route.ts", import.meta.url), "utf8");
-    assert.match(healthSource, /getDb\(\)/);
+    assert.match(healthSource, /databaseOk|getDb\(\)/);
     assert.doesNotMatch(healthSource, /password123|seedDemo|seedIfEmpty/);
     const db = getDb();
     const count = db.prepare("SELECT COUNT(*) AS c FROM users").get() as { c: number };

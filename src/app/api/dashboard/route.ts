@@ -33,7 +33,7 @@ export async function GET(request: Request) {
         SUM(CASE WHEN a.type = 'EXPENSE' THEN jl.debit - jl.credit ELSE 0 END) AS expenses
       FROM journal_lines jl
       JOIN journal_entries je ON je.id = jl.journal_entry_id
-      JOIN accounts a ON a.id = jl.account_id
+      JOIN accounts a ON a.id = jl.account_id AND a.company_id = je.company_id
       WHERE je.company_id = ? AND je.status = 'POSTED'
       GROUP BY substr(je.entry_date, 1, 7)
       ORDER BY month ASC
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
     .prepare(`
       SELECT i.*, c.name AS customer_name
       FROM invoices i
-      JOIN customers c ON c.id = i.customer_id
+      JOIN customers c ON c.id = i.customer_id AND c.company_id = i.company_id
       WHERE i.company_id = ? AND i.status IN ('SENT', 'PARTIAL', 'OVERDUE')
       ORDER BY i.due_date ASC
       LIMIT 6

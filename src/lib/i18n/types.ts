@@ -86,6 +86,24 @@ export interface Dictionary {
     activePlan: string;
     subscriptionTab: string;
     installMobileApp: string;
+    passwordHint: string;
+    tooManyAttempts: string;
+    signupClosed: string;
+    trialBanner: string;
+    trialBannerOne: string;
+    subscriptionNeededTitle: string;
+    subscriptionNeededLead: string;
+    subscriptionPausedTitle: string;
+    subscriptionPausedLead: string;
+    subscriptionNeededBody: string;
+    subscriptionContact: string;
+    subscriptionViewOnly: string;
+    subscriptionReadOnlyBanner: string;
+    statusTrial: string;
+    statusActive: string;
+    statusExpired: string;
+    statusPaused: string;
+    paidUntilLabel: string;
   };
   common: {
     save: string;

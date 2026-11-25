@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
-import { requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -29,6 +31,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
   try {
@@ -44,7 +48,9 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
-    if (!body.name?.trim()) {
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
+    if (!body.name?.trim() || body.name.trim().length > 200) {
       return NextResponse.json({ error: "Vendor name is required" }, { status: 400 });
     }
     const db = getDb();
@@ -66,6 +72,6 @@ export async function POST(request: Request) {
     logAudit(companyId, auth.user.id, "CREATE_VENDOR", "VENDOR", id, `Added vendor ${body.name}`);
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

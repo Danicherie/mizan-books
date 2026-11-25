@@ -19,7 +19,9 @@ Copy `.env.example` to `.env`. The names below are the ones that matter. Put the
 | `INITIAL_ADMIN_NAME` | Optional display name for that administrator. |
 | `INITIAL_COMPANY_NAME` | Optional. If set, the first company is created with a chart of accounts. |
 | `INITIAL_COMPANY_CURRENCY` | Optional. Defaults to `ETB` when a company name is set. |
-| `ALLOWED_ORIGIN` | The public address of the site, such as `https://books.example.com`. |
+| `ALLOWED_ORIGIN` | The public address of the site, such as `https://mizanbooks.tech`. Changes made in the browser are rejected unless they come from this address. `*` means “same host name as the request”. If a proxy rewrites the host, set the real public address. |
+| `OPERATOR_PASSWORD` | Password for the owner page at `/admin`. At least 12 characters. Not a sample password. Leave it empty and `/admin` stays off. There is no default. |
+| `SIGNUP_ENABLED` | Leave `true` so a new business can sign up at `/app`. Set `false` to turn public sign-up off. |
 | `DATA_DIR` | Where `mizan.db` is stored. In Docker this is `/app/data`. |
 | `COOKIE_SECURE` | Set `true` once HTTPS is in front of the app. |
 | `BACKUP_DIR` | A folder on a different disk from the live database, when you can. |
@@ -27,9 +29,11 @@ Copy `.env.example` to `.env`. The names below are the ones that matter. Put the
 | `BACKUP_INTERVAL_SECONDS` | How often the backup service runs. Default 86400 (once a day). |
 | `PORT` | Host port for Docker. Default 3000. |
 
-If you leave `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` empty, open the site and use **Sign up**. That creates your user and your first company. The sign-in form is blank. It does not offer a sample password.
+If you leave `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` empty, open `/app` and use **Sign up**. That creates your user and your first company. The sign-in form is blank. It does not offer a sample password. The public pages at `/`, `/about`, `/contact`, `/privacy`, and `/terms` stay open without a login.
 
-The first time the app opens an empty database it may create that administrator, including when the health check runs. It never creates the old demo accounts unless `ENABLE_DEMO_LOGIN` is exactly `true`.
+Each new company starts a 30-day free trial. During the trial people can keep working. After the trial ends, or if you pause the company, they can still sign in and export their books, but they cannot add or change records. To turn editing back on, open `/admin` (it needs `OPERATOR_PASSWORD`) and mark the company paid until a date, or extend the trial. There is no card payment yet. A later payment service only needs to set that paid-until date.
+
+The first time the app opens an empty database it may create that administrator, including when the health check runs. It never creates the old demo accounts unless `ENABLE_DEMO_LOGIN` is exactly `true`. Opening an older database once gives every company that is not already paid a fresh 30-day trial from that moment.
 
 ---
 
@@ -73,7 +77,7 @@ Restore by stopping the app, replacing `mizan.db` with a backup file (and removi
 1. Push this repository to GitHub.
 2. Create a Docker web service from the included `Dockerfile`.
 3. Attach a persistent disk mounted at `/app/data`.
-4. Set `MIZAN_SESSION_SECRET`, `ENABLE_DEMO_LOGIN=false`, `DATA_DIR=/app/data`, and `ALLOWED_ORIGIN` to the public site. Add `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` if you want the first administrator created for you.
+4. Set `MIZAN_SESSION_SECRET`, `ENABLE_DEMO_LOGIN=false`, `DATA_DIR=/app/data`, and `ALLOWED_ORIGIN` to the public site. Add `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` if you want the first administrator created for you. Set `OPERATOR_PASSWORD` if you want the owner page at `/admin`. Leave `SIGNUP_ENABLED` as `true` unless you want to turn public sign-up off.
 5. Set the health check path to `/api/health`.
 6. Run `node scripts/backup-sqlite.mjs` on a daily schedule, with `BACKUP_DIR` pointed at a second disk or a copy you download off the server. The health check does not turn on demo data.
 

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, nextSequenceNumber, postJournalEntry, type JournalLineInput } from "@/lib/accounting";
-import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 import {
   BILL_LINE_MONEY_FIELDS,
   fromMinor,
@@ -25,8 +27,8 @@ export async function GET(request: Request) {
     .prepare(`
       SELECT b.*, v.name AS vendor_name, v.tin_number AS vendor_tin, a.code AS expense_account_code, a.name AS expense_account_name
       FROM bills b
-      JOIN vendors v ON v.id = b.vendor_id
-      LEFT JOIN accounts a ON a.id = b.expense_account_id
+      JOIN vendors v ON v.id = b.vendor_id AND v.company_id = b.company_id
+      LEFT JOIN accounts a ON a.id = b.expense_account_id AND a.company_id = b.company_id
       WHERE b.company_id = ?
       ORDER BY b.issue_date DESC, b.id DESC
     `)
@@ -44,6 +46,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
 
@@ -65,8 +69,10 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
     const company = getCompanyRecord(companyId);
-    if (!body.vendor_id || !body.expense_account_id || !body.lines?.length) {
+    if (!body.vendor_id || !body.expense_account_id || !body.lines?.length || body.lines.length > 200) {
       return NextResponse.json({ error: "Vendor, expense account, and lines are required" }, { status: 400 });
     }
 
@@ -167,6 +173,6 @@ export async function POST(request: Request) {
     logAudit(companyId, auth.user.id, "CREATE_BILL", "BILL", billId, `Recorded ${billNumber} from ${vendor.name} (${currencyCode} ${fromMinor(netMinor)})`);
     return NextResponse.json({ id: billId, bill_number: billNumber, journal_entry_id: jeId }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Building2, RefreshCw, Shield, Sparkles, CheckCircle2 } from "lucide-react";
+import { Plus, Building2, RefreshCw, Shield, Sparkles } from "lucide-react";
+import { evaluateSubscription } from "@/lib/subscription";
 import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
 import { useApp, type Company } from "../AppContext";
 import { Card, Modal, PageHeader, StatusBadge } from "../ui";
@@ -31,8 +32,52 @@ interface AuditLogItem {
   created_at: string;
 }
 
+function statusLabel(status: string, t: ReturnType<typeof useApp>["t"]): string {
+  if (status === "trial") return t.auth.statusTrial;
+  if (status === "active") return t.auth.statusActive;
+  if (status === "paused") return t.auth.statusPaused;
+  return t.auth.statusExpired;
+}
+
+function SubscriptionPanel() {
+  const { activeCompany, t, formatDt } = useApp();
+  if (!activeCompany) return null;
+  const access = evaluateSubscription({
+    subscription_status: activeCompany.subscription_status,
+    trial_ends_at: activeCompany.trial_ends_at,
+    paid_until: activeCompany.paid_until,
+  });
+  return (
+    <Card className="p-6 text-start">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+          <Sparkles className="w-4 h-4" />
+          <span>{t.auth.subscriptionTab}</span>
+        </div>
+        <StatusBadge status={access.canMutate ? "ACTIVE" : "OVERDUE"} label={statusLabel(access.status, t)} />
+      </div>
+      <h3 className="text-xl font-bold text-slate-900 mt-3">
+        {access.status === "trial" && access.daysLeft != null
+          ? `${access.daysLeft} ${t.auth.trialDaysLeft}`
+          : statusLabel(access.status, t)}
+      </h3>
+      {activeCompany.trial_ends_at && access.status === "trial" && (
+        <p className="text-sm text-slate-600 mt-2">
+          {t.auth.trialEndsOn}: {formatDt(activeCompany.trial_ends_at.slice(0, 10))}
+        </p>
+      )}
+      {activeCompany.paid_until && (
+        <p className="text-sm text-slate-600 mt-2">
+          {t.auth.paidUntilLabel}: {formatDt(activeCompany.paid_until.slice(0, 10))}
+        </p>
+      )}
+      <p className="text-sm text-slate-700 mt-4 leading-relaxed">{t.auth.subscriptionContact}</p>
+    </Card>
+  );
+}
+
 export function SettingsModule() {
-  const { activeCompany, setActiveCompanyId, t, formatDt, isAdmin, refreshSession, showToast, trialDaysLeft } = useApp();
+  const { activeCompany, setActiveCompanyId, t, formatDt, isAdmin, canWrite, refreshSession, showToast } = useApp();
   const [subTab, setSubTab] = useState<"companies" | "subscription" | "fx" | "users" | "audit">("companies");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [rates, setRates] = useState<FxRate[]>([]);
@@ -159,29 +204,13 @@ export function SettingsModule() {
     void load();
   }
 
-  async function handleSelectPlan(planName: "FREE_TRIAL" | "BUSINESS" | "ENTERPRISE") {
-    if (!activeCompany) return;
-    const res = await fetch("/api/billing", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyId: activeCompany.id, plan_name: planName }),
-    });
-    if (!res.ok) {
-      showToast("error", t.common.error);
-      return;
-    }
-    showToast("success", t.common.success);
-    await refreshSession();
-    void load();
-  }
-
   return (
     <div>
       <PageHeader
         title={t.settings.title}
         subtitle={t.settings.subtitle}
         actions={
-          isAdmin && (
+          isAdmin && canWrite && (
             <>
               <button
                 type="button"
@@ -280,87 +309,7 @@ export function SettingsModule() {
           })}
         </div>
       ) : subTab === "subscription" ? (
-        <div className="space-y-6">
-          <Card className="p-6 bg-gradient-to-r from-emerald-950 to-slate-900 text-white border-emerald-800">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-300">
-                  <Sparkles className="w-4 h-4" />
-                  <span>{activeCompany?.plan_name || "FREE_TRIAL"}</span>
-                </div>
-                <h3 className="text-xl font-bold mt-1">
-                  {trialDaysLeft !== null
-                    ? `${trialDaysLeft} ${t.auth.trialDaysLeft}`
-                    : `${t.auth.activePlan}: ${activeCompany?.plan_name}`}
-                </h3>
-                {activeCompany?.trial_ends_at && trialDaysLeft !== null && (
-                  <p className="text-xs text-emerald-200/80 mt-1">
-                    {t.auth.trialEndsOn}: {formatDt(activeCompany.trial_ends_at.slice(0, 10))}
-                  </p>
-                )}
-              </div>
-              <StatusBadge status="ACTIVE" label={activeCompany?.subscription_status || "TRIALING"} />
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              {
-                id: "FREE_TRIAL" as const,
-                name: "30-Day Free Trial",
-                price: "$0 / 30 days",
-                features: ["All accounting modules", "5 Languages + Arabic RTL", "Ethiopian & Gregorian Calendar", "Web + Mobile App"],
-              },
-              {
-                id: "BUSINESS" as const,
-                name: "Business Pro",
-                price: "$29 / month",
-                features: ["Up to 3 companies", "Unlimited invoices, bills & payroll", "Multi-currency + VAT/WHT", "Priority support"],
-              },
-              {
-                id: "ENTERPRISE" as const,
-                name: "Enterprise ERP",
-                price: "$79 / month",
-                features: ["Unlimited companies & users", "Role-based audit controls", "Custom tax regimes & API access", "Dedicated onboarding"],
-              },
-            ].map((plan) => {
-              const current = (activeCompany?.plan_name || "FREE_TRIAL") === plan.id;
-              return (
-                <Card
-                  key={plan.id}
-                  className={`p-5 flex flex-col justify-between ${
-                    current ? "border-emerald-500 ring-2 ring-emerald-500/20" : ""
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-bold text-slate-900">{plan.name}</h4>
-                      {current && <StatusBadge status="ACTIVE" label={t.auth.activePlan} />}
-                    </div>
-                    <div className="text-2xl font-extrabold text-emerald-700 mt-2">{plan.price}</div>
-                    <ul className="mt-4 space-y-2 text-xs text-slate-600">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {isAdmin && !current && (
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPlan(plan.id)}
-                      className="mt-5 w-full py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-emerald-700 transition-colors cursor-pointer"
-                    >
-                      {t.auth.upgradePlan}
-                    </button>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-        </div>
+        <SubscriptionPanel />
       ) : subTab === "fx" ? (
         <Card className="overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
@@ -383,14 +332,14 @@ export function SettingsModule() {
                       <input
                         type="number"
                         step="0.0001"
-                        disabled={!isAdmin || r.currency_code === activeCompany?.base_currency}
+                        disabled={!canWrite || r.currency_code === activeCompany?.base_currency}
                         value={rateEdits[r.currency_code] ?? r.rate_to_base}
                         onChange={(e) => setRateEdits({ ...rateEdits, [r.currency_code]: e.target.value })}
                         className="w-40 px-3 py-1.5 rounded-lg border border-slate-300 text-sm tabular-nums disabled:bg-slate-50"
                       />
                     </td>
                     <td className="px-4 py-3 text-end">
-                      {isAdmin && r.currency_code !== activeCompany?.base_currency && (
+                      {canWrite && r.currency_code !== activeCompany?.base_currency && (
                         <button
                           type="button"
                           onClick={() => handleUpdateRate(r.currency_code)}
@@ -541,7 +490,7 @@ export function SettingsModule() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.password} *</label>
-            <input type="password" required value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+            <input type="password" required minLength={8} placeholder={t.auth.passwordHint} value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1">{t.settings.role}</label>

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountBalances } from "@/lib/accounting";
-import { requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -14,6 +16,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
 
@@ -32,7 +36,10 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
-    if (!body.code?.trim() || !body.name?.trim() || !body.type) {
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
+    const accountTypes = new Set(["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]);
+    if (!body.code?.trim() || body.code.trim().length > 32 || !body.name?.trim() || body.name.trim().length > 200 || !accountTypes.has(body.type)) {
       return NextResponse.json({ error: "Code, name, and type are required" }, { status: 400 });
     }
     const normalBalance = body.type === "ASSET" || body.type === "EXPENSE" ? "DEBIT" : "CREDIT";
@@ -59,6 +66,6 @@ export async function POST(request: Request) {
     logAudit(companyId, auth.user.id, "CREATE_ACCOUNT", "ACCOUNT", id, `Created account ${body.code} - ${body.name}`);
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

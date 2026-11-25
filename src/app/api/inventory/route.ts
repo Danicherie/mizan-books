@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, postJournalEntry } from "@/lib/accounting";
-import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId, userHasCompanyAccess } from "@/lib/api-helpers";
+import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId, userHasCompanyAccess } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 import { getTodayIso } from "@/lib/calendar";
 import { fromMinor, INVENTORY_MONEY_FIELDS, minorFromSql, mulMinor, toMinor, withMajorMoney } from "@/lib/money";
 
@@ -24,6 +26,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
   try {
@@ -42,7 +46,9 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
-    if (!body.sku?.trim() || !body.name?.trim()) {
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
+    if (!body.sku?.trim() || body.sku.trim().length > 64 || !body.name?.trim() || body.name.trim().length > 200) {
       return NextResponse.json({ error: "SKU and name are required" }, { status: 400 });
     }
     const db = getDb();
@@ -75,11 +81,13 @@ export async function POST(request: Request) {
     logAudit(companyId, auth.user.id, "CREATE_INVENTORY_ITEM", "INVENTORY", id, `Added ${body.sku} - ${body.name}`);
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }
 
 export async function PATCH(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
   try {
@@ -101,6 +109,8 @@ export async function PATCH(request: Request) {
     if (!userHasCompanyAccess(auth.user.id, item.company_id)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const blocked = guardCompanyMutation(auth.user, item.company_id);
+    if (blocked) return blocked;
 
     const delta = Number(body.delta);
     if (!delta) return NextResponse.json({ error: "Non-zero adjustment required" }, { status: 400 });
@@ -137,6 +147,6 @@ export async function PATCH(request: Request) {
     logAudit(item.company_id, auth.user.id, "ADJUST_STOCK", "INVENTORY", item.id, `Adjusted ${item.sku} by ${delta} (${body.reason || "manual"})`);
     return NextResponse.json({ ok: true, quantity_on_hand: newQty });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

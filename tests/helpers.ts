@@ -14,6 +14,10 @@ const ENV_KEYS = [
   "INITIAL_COMPANY_CURRENCY",
   "NODE_ENV",
   "MIZAN_SESSION_SECRET",
+  "SIGNUP_ENABLED",
+  "OPERATOR_PASSWORD",
+  "ALLOWED_ORIGIN",
+  "COOKIE_SECURE",
   "BACKUP_DIR",
   "BACKUP_RETENTION_DAYS",
 ] as const;
@@ -31,6 +35,10 @@ export function useTempDatabase() {
   delete process.env.INITIAL_COMPANY_NAME;
   delete process.env.INITIAL_COMPANY_CURRENCY;
   delete process.env.BACKUP_DIR;
+  delete process.env.SIGNUP_ENABLED;
+  delete process.env.OPERATOR_PASSWORD;
+  delete process.env.ALLOWED_ORIGIN;
+  delete process.env.COOKIE_SECURE;
   resetDbForTests();
 
   return {

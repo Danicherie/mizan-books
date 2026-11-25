@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { getDictionary, isRtl, type Dictionary, type Lang } from "@/lib/i18n";
 import { formatDate, type CalendarSystem } from "@/lib/calendar";
 import { formatMoney } from "@/lib/currency";
+import { evaluateSubscription, type SubscriptionAccess } from "@/lib/subscription";
 
 export interface Company {
   id: number;
@@ -22,6 +23,8 @@ export interface Company {
   subscription_status?: string;
   trial_starts_at?: string;
   trial_ends_at?: string;
+  paid_until?: string | null;
+  membership_role?: string;
 }
 
 export interface UserSession {
@@ -69,7 +72,9 @@ interface AppContextValue {
   toast: { type: "success" | "error"; message: string } | null;
   showToast: (type: "success" | "error", message: string) => void;
   trialDaysLeft: number | null;
+  subscription: SubscriptionAccess | null;
   demoLoginEnabled: boolean;
+  signupEnabled: boolean;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -84,6 +89,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [demoLoginEnabled, setDemoLoginEnabled] = useState(false);
+  const [signupEnabled, setSignupEnabled] = useState(true);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -119,11 +125,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         user: UserSession | null;
         companies: Company[];
         demoLoginEnabled?: boolean;
+        signupEnabled?: boolean;
       };
       setUser(data.user);
       setCompanies(data.companies || []);
       if (typeof data.demoLoginEnabled === "boolean") {
         setDemoLoginEnabled(data.demoLoginEnabled);
+      }
+      if (typeof data.signupEnabled === "boolean") {
+        setSignupEnabled(data.signupEnabled);
       }
       if (data.companies?.length) {
         setActiveCompanyIdState((prev) =>
@@ -185,14 +195,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const activeCompany = companies.find((c) => c.id === activeCompanyId) ?? companies[0] ?? null;
   const t = getDictionary(lang);
 
-  const trialDaysLeft = (() => {
-    if (!activeCompany?.trial_ends_at) return 30;
-    if (activeCompany.subscription_status === "ACTIVE" && activeCompany.plan_name !== "FREE_TRIAL") {
-      return null;
-    }
-    const ms = new Date(activeCompany.trial_ends_at).getTime() - Date.now();
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
-  })();
+  const subscription = activeCompany
+    ? evaluateSubscription({
+        subscription_status: activeCompany.subscription_status,
+        trial_ends_at: activeCompany.trial_ends_at,
+        paid_until: activeCompany.paid_until,
+      })
+    : null;
+  const trialDaysLeft = subscription?.status === "trial" ? subscription.daysLeft : null;
+  const membershipRole = activeCompany?.membership_role || user?.role;
+  const roleCanWrite = membershipRole === "admin" || membershipRole === "accountant";
 
   const formatAmt = useCallback(
     (val: number | null | undefined, currency?: string, compact = false) =>
@@ -225,12 +237,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         logout,
         formatAmt,
         formatDt,
-        canWrite: user?.role === "admin" || user?.role === "accountant",
-        isAdmin: user?.role === "admin",
+        canWrite: roleCanWrite && (subscription?.canMutate ?? false),
+        isAdmin: membershipRole === "admin",
         toast,
         showToast,
         trialDaysLeft,
+        subscription,
         demoLoginEnabled,
+        signupEnabled,
       }}
     >
       {children}

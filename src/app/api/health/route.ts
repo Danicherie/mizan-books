@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { appVersion, databaseOk } from "@/lib/app-info";
 
 export async function GET() {
-  try {
-    const db = getDb();
-    db.prepare("SELECT 1").get();
-    return NextResponse.json({
-      status: "ok",
-      service: "mizan-books",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    return NextResponse.json(
-      { status: "error", error: err instanceof Error ? err.message : String(err) },
-      { status: 500 }
-    );
+  if (!databaseOk()) {
+    console.error("[mizan] health check failed");
+    return NextResponse.json({ status: "error", service: "mizan-books", version: appVersion() }, { status: 500 });
   }
+  return NextResponse.json({
+    status: "ok",
+    service: "mizan-books",
+    version: appVersion(),
+    timestamp: new Date().toISOString(),
+  });
 }
