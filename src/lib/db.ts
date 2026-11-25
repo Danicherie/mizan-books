@@ -1,7 +1,27 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
+import { DatabaseSync, type SQLInputValue } from "node:sqlite";
+import { fromMinor, toMinor } from "./money";
+import { computeEmployeePay } from "./payroll-math";
+
+const MONEY_MINOR_MIGRATION = "2026_11_25_money_minor_units";
+
+/** Columns that used to be floating-point currency amounts. They are now integer cents. */
+const MONEY_COLUMNS: Record<string, string[]> = {
+  journal_lines: ["debit", "credit", "foreign_amount"],
+  customers: ["credit_limit"],
+  inventory_items: ["unit_cost", "unit_price"],
+  invoices: ["subtotal", "vat_amount", "wht_amount", "total", "amount_paid"],
+  invoice_lines: ["unit_price", "line_total"],
+  bills: ["subtotal", "vat_amount", "wht_amount", "total", "amount_paid"],
+  bill_lines: ["unit_cost", "line_total"],
+  employees: ["base_salary", "transport_allowance", "housing_allowance"],
+  payroll_runs: ["total_gross", "total_income_tax", "total_employee_pension", "total_employer_pension", "total_net"],
+  payroll_items: ["gross_salary", "taxable_income", "income_tax", "employee_pension", "employer_pension", "net_salary"],
+};
+
+const PUBLISHED_PASSWORDS = new Set(["password123", "admin", "changeme", "change-me"]);
 
 let _db: DatabaseSync | null = null;
 
@@ -404,11 +424,11 @@ function initSchema(db: DatabaseSync) {
       journal_entry_id INTEGER NOT NULL,
       account_id INTEGER NOT NULL,
       description TEXT NOT NULL DEFAULT '',
-      debit REAL NOT NULL DEFAULT 0,
-      credit REAL NOT NULL DEFAULT 0,
+      debit INTEGER NOT NULL DEFAULT 0,
+      credit INTEGER NOT NULL DEFAULT 0,
       currency_code TEXT NOT NULL DEFAULT 'ETB',
       exchange_rate REAL NOT NULL DEFAULT 1,
-      foreign_amount REAL NOT NULL DEFAULT 0,
+      foreign_amount INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (journal_entry_id) REFERENCES journal_entries(id) ON DELETE CASCADE,
       FOREIGN KEY (account_id) REFERENCES accounts(id)
     );
@@ -422,7 +442,7 @@ function initSchema(db: DatabaseSync) {
       tin_number TEXT NOT NULL DEFAULT '',
       address TEXT NOT NULL DEFAULT '',
       currency_code TEXT NOT NULL DEFAULT 'ETB',
-      credit_limit REAL NOT NULL DEFAULT 0,
+      credit_limit INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
     );
@@ -448,8 +468,8 @@ function initSchema(db: DatabaseSync) {
       category TEXT NOT NULL DEFAULT 'General',
       item_type TEXT NOT NULL DEFAULT 'PRODUCT',
       unit TEXT NOT NULL DEFAULT 'pcs',
-      unit_cost REAL NOT NULL DEFAULT 0,
-      unit_price REAL NOT NULL DEFAULT 0,
+      unit_cost INTEGER NOT NULL DEFAULT 0,
+      unit_price INTEGER NOT NULL DEFAULT 0,
       quantity_on_hand REAL NOT NULL DEFAULT 0,
       reorder_level REAL NOT NULL DEFAULT 5,
       income_account_id INTEGER,
@@ -469,13 +489,13 @@ function initSchema(db: DatabaseSync) {
       due_date TEXT NOT NULL,
       currency_code TEXT NOT NULL DEFAULT 'ETB',
       exchange_rate REAL NOT NULL DEFAULT 1,
-      subtotal REAL NOT NULL DEFAULT 0,
+      subtotal INTEGER NOT NULL DEFAULT 0,
       vat_rate REAL NOT NULL DEFAULT 15,
-      vat_amount REAL NOT NULL DEFAULT 0,
+      vat_amount INTEGER NOT NULL DEFAULT 0,
       wht_rate REAL NOT NULL DEFAULT 0,
-      wht_amount REAL NOT NULL DEFAULT 0,
-      total REAL NOT NULL DEFAULT 0,
-      amount_paid REAL NOT NULL DEFAULT 0,
+      wht_amount INTEGER NOT NULL DEFAULT 0,
+      total INTEGER NOT NULL DEFAULT 0,
+      amount_paid INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'SENT',
       notes TEXT NOT NULL DEFAULT '',
       journal_entry_id INTEGER,
@@ -490,8 +510,8 @@ function initSchema(db: DatabaseSync) {
       item_id INTEGER,
       description TEXT NOT NULL,
       quantity REAL NOT NULL DEFAULT 1,
-      unit_price REAL NOT NULL DEFAULT 0,
-      line_total REAL NOT NULL DEFAULT 0,
+      unit_price INTEGER NOT NULL DEFAULT 0,
+      line_total INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
     );
 
@@ -505,13 +525,13 @@ function initSchema(db: DatabaseSync) {
       currency_code TEXT NOT NULL DEFAULT 'ETB',
       exchange_rate REAL NOT NULL DEFAULT 1,
       expense_account_id INTEGER NOT NULL,
-      subtotal REAL NOT NULL DEFAULT 0,
+      subtotal INTEGER NOT NULL DEFAULT 0,
       vat_rate REAL NOT NULL DEFAULT 15,
-      vat_amount REAL NOT NULL DEFAULT 0,
+      vat_amount INTEGER NOT NULL DEFAULT 0,
       wht_rate REAL NOT NULL DEFAULT 0,
-      wht_amount REAL NOT NULL DEFAULT 0,
-      total REAL NOT NULL DEFAULT 0,
-      amount_paid REAL NOT NULL DEFAULT 0,
+      wht_amount INTEGER NOT NULL DEFAULT 0,
+      total INTEGER NOT NULL DEFAULT 0,
+      amount_paid INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'OPEN',
       notes TEXT NOT NULL DEFAULT '',
       journal_entry_id INTEGER,
@@ -526,8 +546,8 @@ function initSchema(db: DatabaseSync) {
       item_id INTEGER,
       description TEXT NOT NULL,
       quantity REAL NOT NULL DEFAULT 1,
-      unit_cost REAL NOT NULL DEFAULT 0,
-      line_total REAL NOT NULL DEFAULT 0,
+      unit_cost INTEGER NOT NULL DEFAULT 0,
+      line_total INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (bill_id) REFERENCES bills(id) ON DELETE CASCADE
     );
 
@@ -539,9 +559,9 @@ function initSchema(db: DatabaseSync) {
       job_title TEXT NOT NULL DEFAULT '',
       department TEXT NOT NULL DEFAULT '',
       tin_number TEXT NOT NULL DEFAULT '',
-      base_salary REAL NOT NULL DEFAULT 0,
-      transport_allowance REAL NOT NULL DEFAULT 0,
-      housing_allowance REAL NOT NULL DEFAULT 0,
+      base_salary INTEGER NOT NULL DEFAULT 0,
+      transport_allowance INTEGER NOT NULL DEFAULT 0,
+      housing_allowance INTEGER NOT NULL DEFAULT 0,
       bank_account TEXT NOT NULL DEFAULT '',
       active INTEGER NOT NULL DEFAULT 1,
       hire_date TEXT NOT NULL DEFAULT '2025-01-01',
@@ -553,11 +573,11 @@ function initSchema(db: DatabaseSync) {
       company_id INTEGER NOT NULL,
       period_label TEXT NOT NULL,
       pay_date TEXT NOT NULL,
-      total_gross REAL NOT NULL DEFAULT 0,
-      total_income_tax REAL NOT NULL DEFAULT 0,
-      total_employee_pension REAL NOT NULL DEFAULT 0,
-      total_employer_pension REAL NOT NULL DEFAULT 0,
-      total_net REAL NOT NULL DEFAULT 0,
+      total_gross INTEGER NOT NULL DEFAULT 0,
+      total_income_tax INTEGER NOT NULL DEFAULT 0,
+      total_employee_pension INTEGER NOT NULL DEFAULT 0,
+      total_employer_pension INTEGER NOT NULL DEFAULT 0,
+      total_net INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'POSTED',
       journal_entry_id INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -568,12 +588,12 @@ function initSchema(db: DatabaseSync) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       payroll_run_id INTEGER NOT NULL,
       employee_id INTEGER NOT NULL,
-      gross_salary REAL NOT NULL DEFAULT 0,
-      taxable_income REAL NOT NULL DEFAULT 0,
-      income_tax REAL NOT NULL DEFAULT 0,
-      employee_pension REAL NOT NULL DEFAULT 0,
-      employer_pension REAL NOT NULL DEFAULT 0,
-      net_salary REAL NOT NULL DEFAULT 0,
+      gross_salary INTEGER NOT NULL DEFAULT 0,
+      taxable_income INTEGER NOT NULL DEFAULT 0,
+      income_tax INTEGER NOT NULL DEFAULT 0,
+      employee_pension INTEGER NOT NULL DEFAULT 0,
+      employer_pension INTEGER NOT NULL DEFAULT 0,
+      net_salary INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (payroll_run_id) REFERENCES payroll_runs(id) ON DELETE CASCADE,
       FOREIGN KEY (employee_id) REFERENCES employees(id)
     );
@@ -587,6 +607,11 @@ function initSchema(db: DatabaseSync) {
       entity_id INTEGER,
       details TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      id TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS company_users (
@@ -650,10 +675,163 @@ function initSchema(db: DatabaseSync) {
   }
 }
 
-function seedIfEmpty(db: DatabaseSync) {
+function columnNeedsMinorConversion(declaredType: string): boolean {
+  return !declaredType.toUpperCase().includes("INT");
+}
+
+function rewriteCreateSql(sql: string, table: string, moneyColumns: string[]): string {
+  const renamed = sql.replace(
+    new RegExp(`(CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?)(["'\`]?)${table}\\2`, "i"),
+    `$1$2${table}__minor$2`
+  );
+  if (!renamed.includes(`${table}__minor`)) {
+    throw new Error(`Could not prepare the money migration for ${table}.`);
+  }
+  let out = renamed;
+  for (const column of moneyColumns) {
+    out = out.replace(new RegExp(`(\\b${column}\\s+)REAL\\b`, "gi"), "$1INTEGER");
+  }
+  return out;
+}
+
+function migrateMoneyToMinorUnits(db: DatabaseSync) {
+  const done = db.prepare("SELECT id FROM schema_migrations WHERE id = ?").get(MONEY_MINOR_MIGRATION) as
+    | { id: string }
+    | undefined;
+  if (done) return;
+
+  db.exec("PRAGMA foreign_keys = OFF");
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    for (const [table, moneyColumns] of Object.entries(MONEY_COLUMNS)) {
+      const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string; type: string }>;
+      if (info.length === 0) continue;
+      const money = new Set(moneyColumns);
+      const needs = moneyColumns.some((column) => {
+        const found = info.find((col) => col.name === column);
+        return found ? columnNeedsMinorConversion(found.type) : false;
+      });
+      if (!needs) continue;
+
+      const master = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?").get(table) as
+        | { sql: string }
+        | undefined;
+      if (!master?.sql) throw new Error(`Missing table definition for ${table}.`);
+      db.exec(`DROP TABLE IF EXISTS ${table}__minor`);
+      db.exec(rewriteCreateSql(master.sql, table, moneyColumns));
+
+      const names = info.map((col) => col.name);
+      const insert = db.prepare(
+        `INSERT INTO ${table}__minor (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")})`
+      );
+      const rows = db.prepare(`SELECT * FROM ${table}`).all() as Array<Record<string, unknown>>;
+      for (const row of rows) {
+        const values: SQLInputValue[] = names.map((name) => {
+          const value = row[name];
+          if (!money.has(name) || value == null) {
+            if (value == null) return null;
+            if (typeof value === "number" || typeof value === "string" || typeof value === "bigint" || value instanceof Uint8Array) {
+              return value;
+            }
+            throw new Error(`Cannot copy ${table}.${name} while converting money columns.`);
+          }
+          return toMinor(typeof value === "bigint" ? Number(value) : (value as number | string));
+        });
+        insert.run(...values);
+      }
+      db.exec(`DROP TABLE ${table}`);
+      db.exec(`ALTER TABLE ${table}__minor RENAME TO ${table}`);
+    }
+    db.prepare("INSERT INTO schema_migrations (id) VALUES (?)").run(MONEY_MINOR_MIGRATION);
+    db.exec("COMMIT");
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // Keep the original migration error.
+    }
+    throw err;
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON");
+  }
+}
+
+function isDemoMode(): boolean {
+  return process.env.ENABLE_DEMO_LOGIN === "true";
+}
+
+function bootstrapDatabase(db: DatabaseSync) {
   const userCount = (db.prepare("SELECT COUNT(*) as c FROM users").get() as { c: number }).c;
   if (userCount > 0) return;
 
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    if (isDemoMode()) {
+      if ((process.env.INITIAL_ADMIN_EMAIL ?? "").trim() || (process.env.INITIAL_ADMIN_PASSWORD ?? "").trim()) {
+        console.warn("[Mizan Books] ENABLE_DEMO_LOGIN=true, so sample companies are created and INITIAL_ADMIN_EMAIL is not used.");
+      }
+      if (process.env.NODE_ENV === "production") {
+        console.warn(
+          "[Mizan Books] ENABLE_DEMO_LOGIN=true. Sample users with the published demo password will be created. Do not use this for a real company's books."
+        );
+      }
+      seedDemoData(db);
+    } else {
+      createInitialAdmin(db);
+    }
+    db.exec("COMMIT");
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // Keep the original error.
+    }
+    throw err;
+  }
+}
+
+function createInitialAdmin(db: DatabaseSync) {
+  const email = (process.env.INITIAL_ADMIN_EMAIL ?? "").trim().toLowerCase();
+  const password = process.env.INITIAL_ADMIN_PASSWORD ?? "";
+  const name = (process.env.INITIAL_ADMIN_NAME ?? "").trim() || "Administrator";
+  const companyName = (process.env.INITIAL_COMPANY_NAME ?? "").trim();
+  if (!email && !password && !companyName) return;
+  if (!email || !password) {
+    throw new Error(
+      "To create the first administrator, set both INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD. Leave both unset to use the sign-up page instead."
+    );
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("INITIAL_ADMIN_EMAIL must be a valid email address.");
+  }
+  if (password.length < 12 || PUBLISHED_PASSWORDS.has(password)) {
+    throw new Error(
+      "INITIAL_ADMIN_PASSWORD must be at least 12 characters and must not be a published sample password."
+    );
+  }
+
+  const userId = Number(
+    db
+      .prepare(
+        `INSERT INTO users (name, email, password_hash, role, preferred_lang, preferred_calendar) VALUES (?, ?, ?, 'admin', 'en', 'gregorian')`
+      )
+      .run(name, email, hashPw(password)).lastInsertRowid
+  );
+
+  if (!companyName) return;
+  const currency = (process.env.INITIAL_COMPANY_CURRENCY ?? "").trim() || "ETB";
+  const companyId = Number(
+    db
+      .prepare(`INSERT INTO companies (name, legal_name, base_currency, email) VALUES (?, ?, ?, ?)`)
+      .run(companyName, companyName, currency, email).lastInsertRowid
+  );
+  seedCompanyChartOfAccounts(db, companyId);
+  seedCompanyExchangeRates(db, companyId, currency);
+  db.prepare("INSERT INTO company_users (company_id, user_id, role) VALUES (?, ?, 'admin')").run(companyId, userId);
+}
+
+/** Sample companies and the published demo password. Runs only when ENABLE_DEMO_LOGIN=true. */
+function seedDemoData(db: DatabaseSync) {
   // 1. Users
   const insUser = db.prepare(`
     INSERT INTO users (name, email, password_hash, role, preferred_lang, preferred_calendar)
@@ -748,7 +926,9 @@ function seedIfEmpty(db: DatabaseSync) {
   ): number {
     const jeId = Number(insJE.run(companyId, num, date, ref, desc, sourceType, sourceId, adminId).lastInsertRowid);
     for (const l of lines) {
-      insJL.run(jeId, l.acc, l.desc, l.debit, l.credit, currency, 1, l.debit || l.credit);
+      const debit = toMinor(l.debit);
+      const credit = toMinor(l.credit);
+      insJL.run(jeId, l.acc, l.desc, debit, credit, currency, 1, debit || credit);
     }
     return jeId;
   }
@@ -768,10 +948,10 @@ function seedIfEmpty(db: DatabaseSync) {
     INSERT INTO customers (company_id, name, email, phone, tin_number, address, currency_code, credit_limit)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const c1 = Number(insCust.run(comp1Id, "Awash Specialty Coffee Exporters", "ap@awashcoffee.et", "+251 11 551 2201", "0019283741", "Kirkos Sub-City, Addis Ababa", "ETB", 1500000).lastInsertRowid);
-  const c2 = Number(insCust.run(comp1Id, "Oromia Tech & Agri Systems", "finance@oromiatech.et", "+251 22 111 4509", "0028374612", "Adama Industrial Park, Oromia", "ETB", 900000).lastInsertRowid);
-  const c3 = Number(insCust.run(comp1Id, "Banadir Commercial Distributors", "billing@banadirtrade.so", "+252 61 555 0194", "SO-884210", "Bakara Commercial District, Mogadishu", "USD", 500000).lastInsertRowid);
-  const c4 = Number(insCust.run(comp1Id, "Al-Noor Trading Establishment", "procurement@alnoor-ksa.sa", "+966 11 452 8890", "310482910400003", "Olaya District, Riyadh, KSA", "SAR", 1200000).lastInsertRowid);
+  const c1 = Number(insCust.run(comp1Id, "Awash Specialty Coffee Exporters", "ap@awashcoffee.et", "+251 11 551 2201", "0019283741", "Kirkos Sub-City, Addis Ababa", "ETB", toMinor(1500000)).lastInsertRowid);
+  const c2 = Number(insCust.run(comp1Id, "Oromia Tech & Agri Systems", "finance@oromiatech.et", "+251 22 111 4509", "0028374612", "Adama Industrial Park, Oromia", "ETB", toMinor(900000)).lastInsertRowid);
+  const c3 = Number(insCust.run(comp1Id, "Banadir Commercial Distributors", "billing@banadirtrade.so", "+252 61 555 0194", "SO-884210", "Bakara Commercial District, Mogadishu", "USD", toMinor(500000)).lastInsertRowid);
+  const c4 = Number(insCust.run(comp1Id, "Al-Noor Trading Establishment", "procurement@alnoor-ksa.sa", "+966 11 452 8890", "310482910400003", "Olaya District, Riyadh, KSA", "SAR", toMinor(1200000)).lastInsertRowid);
 
   // Vendors for Company 1
   const insVend = db.prepare(`
@@ -787,10 +967,10 @@ function seedIfEmpty(db: DatabaseSync) {
     INSERT INTO inventory_items (company_id, sku, name, category, item_type, unit, unit_cost, unit_price, quantity_on_hand, reorder_level, income_account_id, cogs_account_id, inventory_account_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const i1 = Number(insItem.run(comp1Id, "COF-YRG-50", "Yirgacheffe Grade-1 Coffee (50kg Bag)", "Commodities", "PRODUCT", "bag", 18000, 26500, 28, 10, coa1["4000"], coa1["5000"], coa1["1200"]).lastInsertRowid);
-  const i2 = Number(insItem.run(comp1Id, "SOL-INV-5K", "Hybrid Solar Inverter 5kW", "Energy", "PRODUCT", "unit", 65000, 92000, 4, 6, coa1["4000"], coa1["5000"], coa1["1200"]).lastInsertRowid);
-  const i3 = Number(insItem.run(comp1Id, "POS-SCN-01", "Wireless Barcode & Fiscal Scanner", "Hardware", "PRODUCT", "unit", 8500, 14500, 3, 5, coa1["4000"], coa1["5000"], coa1["1200"]).lastInsertRowid);
-  const i4 = Number(insItem.run(comp1Id, "SRV-ERP-01", "ERP & Accounting Setup Consulting", "Services", "SERVICE", "day", 0, 18000, 0, 0, coa1["4100"], coa1["5000"], coa1["1200"]).lastInsertRowid);
+  const i1 = Number(insItem.run(comp1Id, "COF-YRG-50", "Yirgacheffe Grade-1 Coffee (50kg Bag)", "Commodities", "PRODUCT", "bag", toMinor(18000), toMinor(26500), 28, 10, coa1["4000"], coa1["5000"], coa1["1200"]).lastInsertRowid);
+  const i2 = Number(insItem.run(comp1Id, "SOL-INV-5K", "Hybrid Solar Inverter 5kW", "Energy", "PRODUCT", "unit", toMinor(65000), toMinor(92000), 4, 6, coa1["4000"], coa1["5000"], coa1["1200"]).lastInsertRowid);
+  const i3 = Number(insItem.run(comp1Id, "POS-SCN-01", "Wireless Barcode & Fiscal Scanner", "Hardware", "PRODUCT", "unit", toMinor(8500), toMinor(14500), 3, 5, coa1["4000"], coa1["5000"], coa1["1200"]).lastInsertRowid);
+  const i4 = Number(insItem.run(comp1Id, "SRV-ERP-01", "ERP & Accounting Setup Consulting", "Services", "SERVICE", "day", toMinor(0), toMinor(18000), 0, 0, coa1["4100"], coa1["5000"], coa1["1200"]).lastInsertRowid);
 
   // Invoices for Company 1
   const insInv = db.prepare(`
@@ -815,8 +995,8 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["5000"], desc: "COGS - 20 bags coffee", debit: 360000, credit: 0 },
     { acc: coa1["1200"], desc: "Inventory reduction", debit: 0, credit: 360000 },
   ]);
-  const inv1Id = Number(insInv.run(comp1Id, "INV-2026-001", c1, "2026-09-12", "2026-10-12", "ETB", 1, inv1Sub, 15, inv1Vat, 2, inv1Wht, inv1Net, inv1Net, "PAID", "Delivered via Addis warehouse", inv1Je).lastInsertRowid);
-  insInvLine.run(inv1Id, i1, "Yirgacheffe Grade-1 Coffee (50kg Bag)", 20, 26500, 530000);
+  const inv1Id = Number(insInv.run(comp1Id, "INV-2026-001", c1, "2026-09-12", "2026-10-12", "ETB", 1, toMinor(inv1Sub), 15, toMinor(inv1Vat), 2, toMinor(inv1Wht), toMinor(inv1Net), toMinor(inv1Net), "PAID", "Delivered via Addis warehouse", inv1Je).lastInsertRowid);
+  insInvLine.run(inv1Id, i1, "Yirgacheffe Grade-1 Coffee (50kg Bag)", 20, toMinor(26500), toMinor(530000));
   addJE(comp1Id, "JE-2026-0003", "2026-09-25", "PAY-INV-001", "Payment received for INV-2026-001", "INVOICE_PAYMENT", inv1Id, "ETB", [
     { acc: coa1["1010"], desc: "Bank deposit - Awash Coffee", debit: inv1Net, credit: 0 },
     { acc: coa1["1100"], desc: "Clear AR INV-2026-001", debit: 0, credit: inv1Net },
@@ -835,8 +1015,8 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["5000"], desc: "COGS - 4 Solar Inverters", debit: 260000, credit: 0 },
     { acc: coa1["1200"], desc: "Inventory reduction", debit: 0, credit: 260000 },
   ]);
-  const inv2Id = Number(insInv.run(comp1Id, "INV-2026-002", c2, "2026-10-10", "2026-11-09", "ETB", 1, inv2Sub, 15, inv2Vat, 2, inv2Wht, inv2Net, 250000, "PARTIAL", "50% advance received, balance upon commissioning", inv2Je).lastInsertRowid);
-  insInvLine.run(inv2Id, i2, "Hybrid Solar Inverter 5kW", 4, 92000, 368000);
+  const inv2Id = Number(insInv.run(comp1Id, "INV-2026-002", c2, "2026-10-10", "2026-11-09", "ETB", 1, toMinor(inv2Sub), 15, toMinor(inv2Vat), 2, toMinor(inv2Wht), toMinor(inv2Net), toMinor(250000), "PARTIAL", "50% advance received, balance upon commissioning", inv2Je).lastInsertRowid);
+  insInvLine.run(inv2Id, i2, "Hybrid Solar Inverter 5kW", 4, toMinor(92000), toMinor(368000));
   addJE(comp1Id, "JE-2026-0005", "2026-10-18", "PAY-INV-002", "Partial payment received for INV-2026-002", "INVOICE_PAYMENT", inv2Id, "ETB", [
     { acc: coa1["1010"], desc: "Bank deposit - Oromia Tech", debit: 250000, credit: 0 },
     { acc: coa1["1100"], desc: "Partial AR INV-2026-002", debit: 0, credit: 250000 },
@@ -853,8 +1033,8 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["4100"], desc: "Consulting revenue", debit: 0, credit: inv3Sub },
     { acc: coa1["2100"], desc: "15% Output VAT", debit: 0, credit: inv3Vat },
   ]);
-  const inv3Id = Number(insInv.run(comp1Id, "INV-2026-003", c4, "2026-11-08", "2026-12-08", "ETB", 1, inv3Sub, 15, inv3Vat, 2, inv3Wht, inv3Net, 0, "SENT", "Q4 ERP Localization & Training", inv3Je).lastInsertRowid);
-  insInvLine.run(inv3Id, i4, "ERP & Accounting Setup Consulting", 10, 18000, 180000);
+  const inv3Id = Number(insInv.run(comp1Id, "INV-2026-003", c4, "2026-11-08", "2026-12-08", "ETB", 1, toMinor(inv3Sub), 15, toMinor(inv3Vat), 2, toMinor(inv3Wht), toMinor(inv3Net), toMinor(0), "SENT", "Q4 ERP Localization & Training", inv3Je).lastInsertRowid);
+  insInvLine.run(inv3Id, i4, "ERP & Accounting Setup Consulting", 10, toMinor(18000), toMinor(180000));
 
   // Invoice 4 - OVERDUE (Oct 2026 - Banadir Commercial Distributors in USD converted to ETB!)
   const inv4SubUsd = 2800;
@@ -864,8 +1044,8 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["1100"], desc: "AR - Banadir Commercial (USD 2,800)", debit: inv4SubBase, credit: 0 },
     { acc: coa1["4000"], desc: "Zero-rated export sales", debit: 0, credit: inv4SubBase },
   ]);
-  const inv4Id = Number(insInv.run(comp1Id, "INV-2026-004", c3, "2026-10-02", "2026-11-01", "USD", inv4Rate, inv4SubUsd, 0, 0, 0, 0, inv4SubUsd, 0, "OVERDUE", "Zero-rated export invoice (USD)", inv4Je).lastInsertRowid);
-  insInvLine.run(inv4Id, i3, "Wireless Barcode & Fiscal Scanner (Export)", 10, 280, 2800);
+  const inv4Id = Number(insInv.run(comp1Id, "INV-2026-004", c3, "2026-10-02", "2026-11-01", "USD", inv4Rate, toMinor(inv4SubUsd), 0, toMinor(0), 0, toMinor(0), toMinor(inv4SubUsd), toMinor(0), "OVERDUE", "Zero-rated export invoice (USD)", inv4Je).lastInsertRowid);
+  insInvLine.run(inv4Id, i3, "Wireless Barcode & Fiscal Scanner (Export)", 10, toMinor(280), toMinor(2800));
 
   // Bills for Company 1
   const insBill = db.prepare(`
@@ -888,8 +1068,8 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["2000"], desc: "AP - Bole Business Tower", debit: 0, credit: b1Net },
     { acc: coa1["2110"], desc: "2% WHT Payable", debit: 0, credit: b1Wht },
   ]);
-  const b1Id = Number(insBill.run(comp1Id, "BILL-2026-001", v1, "2026-10-05", "2026-10-20", "ETB", 1, coa1["6100"], b1Sub, 15, b1Vat, 2, b1Wht, b1Net, b1Net, "PAID", "Bole HQ Office Lease", b1Je).lastInsertRowid);
-  insBillLine.run(b1Id, null, "Bole HQ Office Lease (Oct-Nov)", 2, 60000, 120000);
+  const b1Id = Number(insBill.run(comp1Id, "BILL-2026-001", v1, "2026-10-05", "2026-10-20", "ETB", 1, coa1["6100"], toMinor(b1Sub), 15, toMinor(b1Vat), 2, toMinor(b1Wht), toMinor(b1Net), toMinor(b1Net), "PAID", "Bole HQ Office Lease", b1Je).lastInsertRowid);
+  insBillLine.run(b1Id, null, "Bole HQ Office Lease (Oct-Nov)", 2, toMinor(60000), toMinor(120000));
   addJE(comp1Id, "JE-2026-0009", "2026-10-15", "PAY-BILL-001", "Payment for BILL-2026-001", "BILL_PAYMENT", b1Id, "ETB", [
     { acc: coa1["2000"], desc: "Clear AP Bole Business Tower", debit: b1Net, credit: 0 },
     { acc: coa1["1010"], desc: "Bank payment", debit: 0, credit: b1Net },
@@ -906,8 +1086,8 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["2000"], desc: "AP - Ethio Telecom", debit: 0, credit: b2Net },
     { acc: coa1["2110"], desc: "2% WHT Payable", debit: 0, credit: b2Wht },
   ]);
-  const b2Id = Number(insBill.run(comp1Id, "BILL-2026-002", v2, "2026-11-03", "2026-11-30", "ETB", 1, coa1["6200"], b2Sub, 15, b2Vat, 2, b2Wht, b2Net, 0, "OPEN", "Dedicated fiber 100Mbps", b2Je).lastInsertRowid);
-  insBillLine.run(b2Id, null, "Enterprise Fiber & SIP Trunk", 1, 32000, 32000);
+  const b2Id = Number(insBill.run(comp1Id, "BILL-2026-002", v2, "2026-11-03", "2026-11-30", "ETB", 1, coa1["6200"], toMinor(b2Sub), 15, toMinor(b2Vat), 2, toMinor(b2Wht), toMinor(b2Net), toMinor(0), "OPEN", "Dedicated fiber 100Mbps", b2Je).lastInsertRowid);
+  insBillLine.run(b2Id, null, "Enterprise Fiber & SIP Trunk", 1, toMinor(32000), toMinor(32000));
 
   // Bill 3 - Freight & Customs (OPEN)
   const b3Sub = 95000;
@@ -920,57 +1100,49 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa1["2000"], desc: "AP - Red Sea Freight", debit: 0, credit: b3Net },
     { acc: coa1["2110"], desc: "2% WHT Payable", debit: 0, credit: b3Wht },
   ]);
-  const b3Id = Number(insBill.run(comp1Id, "BILL-2026-003", v3, "2026-11-12", "2026-12-12", "ETB", 1, coa1["6300"], b3Sub, 15, b3Vat, 2, b3Wht, b3Net, 0, "OPEN", "Container clearance & transport", b3Je).lastInsertRowid);
-  insBillLine.run(b3Id, null, "40ft Container Freight & Customs", 1, 95000, 95000);
+  const b3Id = Number(insBill.run(comp1Id, "BILL-2026-003", v3, "2026-11-12", "2026-12-12", "ETB", 1, coa1["6300"], toMinor(b3Sub), 15, toMinor(b3Vat), 2, toMinor(b3Wht), toMinor(b3Net), toMinor(0), "OPEN", "Container clearance & transport", b3Je).lastInsertRowid);
+  insBillLine.run(b3Id, null, "40ft Container Freight & Customs", 1, toMinor(95000), toMinor(95000));
 
   // Employees for Company 1
   const insEmp = db.prepare(`
     INSERT INTO employees (company_id, employee_code, full_name, job_title, department, tin_number, base_salary, transport_allowance, housing_allowance, bank_account, hire_date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  const e1 = Number(insEmp.run(comp1Id, "EMP-001", "Selamawit Tadesse", "Chief Accountant", "Finance", "ET-992014", 32000, 2500, 4000, "CBE-10002849102", "2024-03-01").lastInsertRowid);
-  const e2 = Number(insEmp.run(comp1Id, "EMP-002", "Beka Gemechu", "Operations Manager", "Logistics", "ET-992015", 28000, 2000, 3000, "AWASH-014209811", "2024-05-15").lastInsertRowid);
-  const e3 = Number(insEmp.run(comp1Id, "EMP-003", "Hodan Farah", "Regional Sales Lead", "Sales", "ET-992016", 24000, 2000, 2500, "CBE-10008374920", "2025-01-10").lastInsertRowid);
-  const e4 = Number(insEmp.run(comp1Id, "EMP-004", "Yusuf Ibrahim", "Inventory Controller", "Warehouse", "ET-992017", 15000, 1200, 1500, "DASHEN-5029184", "2025-04-01").lastInsertRowid);
+  const e1 = Number(insEmp.run(comp1Id, "EMP-001", "Selamawit Tadesse", "Chief Accountant", "Finance", "ET-992014", toMinor(32000), toMinor(2500), toMinor(4000), "CBE-10002849102", "2024-03-01").lastInsertRowid);
+  const e2 = Number(insEmp.run(comp1Id, "EMP-002", "Beka Gemechu", "Operations Manager", "Logistics", "ET-992015", toMinor(28000), toMinor(2000), toMinor(3000), "AWASH-014209811", "2024-05-15").lastInsertRowid);
+  const e3 = Number(insEmp.run(comp1Id, "EMP-003", "Hodan Farah", "Regional Sales Lead", "Sales", "ET-992016", toMinor(24000), toMinor(2000), toMinor(2500), "CBE-10008374920", "2025-01-10").lastInsertRowid);
+  const e4 = Number(insEmp.run(comp1Id, "EMP-004", "Yusuf Ibrahim", "Inventory Controller", "Warehouse", "ET-992017", toMinor(15000), toMinor(1200), toMinor(1500), "DASHEN-5029184", "2025-04-01").lastInsertRowid);
 
   // Seed 1 Posted Payroll Run for Oct 2026 (Ethiopian PAYE + 7%/11% Pension)
-  const calcEtTax = (taxable: number) => {
-    if (taxable <= 600) return 0;
-    if (taxable <= 1650) return taxable * 0.1 - 60;
-    if (taxable <= 3200) return taxable * 0.15 - 142.5;
-    if (taxable <= 5250) return taxable * 0.2 - 302.5;
-    if (taxable <= 7800) return taxable * 0.25 - 565;
-    if (taxable <= 10900) return taxable * 0.3 - 955;
-    return taxable * 0.35 - 1500;
-  };
   const empData = [
     { id: e1, base: 32000, tr: 2500, hs: 4000 },
     { id: e2, base: 28000, tr: 2000, hs: 3000 },
     { id: e3, base: 24000, tr: 2000, hs: 2500 },
     { id: e4, base: 15000, tr: 1200, hs: 1500 },
   ];
-  let totGross = 0, totTax = 0, totEmpPen = 0, totCoPen = 0, totNet = 0;
   const computedItems = empData.map((em) => {
-    const gross = em.base + em.tr + em.hs;
-    const taxable = em.base + em.hs + Math.max(0, em.tr - 600);
-    const tax = Number(calcEtTax(taxable).toFixed(2));
-    const empPen = Number((em.base * 0.07).toFixed(2));
-    const coPen = Number((em.base * 0.11).toFixed(2));
-    const net = Number((gross - tax - empPen).toFixed(2));
-    totGross += gross;
-    totTax += tax;
-    totEmpPen += empPen;
-    totCoPen += coPen;
-    totNet += net;
-    return { ...em, gross, taxable, tax, empPen, coPen, net };
+    const pay = computeEmployeePay(
+      {
+        base_salary: toMinor(em.base),
+        transport_allowance: toMinor(em.tr),
+        housing_allowance: toMinor(em.hs),
+      },
+      "ET_STANDARD"
+    );
+    return { id: em.id, ...pay };
   });
+  const totGross = computedItems.reduce((sum, item) => sum + item.gross, 0);
+  const totTax = computedItems.reduce((sum, item) => sum + item.tax, 0);
+  const totEmpPen = computedItems.reduce((sum, item) => sum + item.empPen, 0);
+  const totCoPen = computedItems.reduce((sum, item) => sum + item.coPen, 0);
+  const totNet = computedItems.reduce((sum, item) => sum + item.net, 0);
 
   const payJeId = addJE(comp1Id, "JE-2026-0012", "2026-10-30", "PAY-2026-10", "Monthly Payroll Run - October 2026", "PAYROLL", null, "ETB", [
-    { acc: coa1["6000"], desc: "Gross salaries & allowances", debit: Number(totGross.toFixed(2)), credit: 0 },
-    { acc: coa1["6010"], desc: "Employer pension contribution (11%)", debit: Number(totCoPen.toFixed(2)), credit: 0 },
-    { acc: coa1["2200"], desc: "Employee PAYE income tax payable", debit: 0, credit: Number(totTax.toFixed(2)) },
-    { acc: coa1["2210"], desc: "Total pension payable (7% + 11%)", debit: 0, credit: Number((totEmpPen + totCoPen).toFixed(2)) },
-    { acc: coa1["1010"], desc: "Net salary bank disbursement", debit: 0, credit: Number(totNet.toFixed(2)) },
+    { acc: coa1["6000"], desc: "Gross salaries & allowances", debit: fromMinor(totGross), credit: 0 },
+    { acc: coa1["6010"], desc: "Employer pension contribution (11%)", debit: fromMinor(totCoPen), credit: 0 },
+    { acc: coa1["2200"], desc: "Employee PAYE income tax payable", debit: 0, credit: fromMinor(totTax) },
+    { acc: coa1["2210"], desc: "Total pension payable (7% + 11%)", debit: 0, credit: fromMinor(totEmpPen + totCoPen) },
+    { acc: coa1["1010"], desc: "Net salary bank disbursement", debit: 0, credit: fromMinor(totNet) },
   ]);
   const prId = Number(
     db
@@ -996,20 +1168,20 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa2["3000"], desc: "Owner's Share Capital", debit: 0, credit: 225000 },
   ]);
 
-  const c2a = Number(insCust.run(comp2Id, "Berbera Port Commercial Authority", "finance@berberaport.so", "+252 63 442 1900", "SL-20941", "Berbera Free Zone", "USD", 100000).lastInsertRowid);
-  const c2b = Number(insCust.run(comp2Id, "Gulf Agro Commodities FZCO", "ap@gulfagro.ae", "+971 4 881 4400", "TRN-100293847100003", "Jebel Ali Free Zone, Dubai", "AED", 250000).lastInsertRowid);
+  const c2a = Number(insCust.run(comp2Id, "Berbera Port Commercial Authority", "finance@berberaport.so", "+252 63 442 1900", "SL-20941", "Berbera Free Zone", "USD", toMinor(100000)).lastInsertRowid);
+  insCust.run(comp2Id, "Gulf Agro Commodities FZCO", "ap@gulfagro.ae", "+971 4 881 4400", "TRN-100293847100003", "Jebel Ali Free Zone, Dubai", "AED", toMinor(250000));
   const v2a = Number(insVend.run(comp2Id, "DP Maritime Chartering", "billing@dpmaritime.ae", "+971 4 551 9000", "TRN-100991827300003", "Dubai Maritime City", "USD").lastInsertRowid);
 
-  const i2a = Number(insItem.run(comp2Id, "FRT-40FT", "40ft Sea Freight Charter (Dubai-Berbera)", "Freight", "SERVICE", "trip", 0, 14500, 0, 0, coa2["4100"], coa2["5000"], coa2["1200"]).lastInsertRowid);
-  insItem.run(comp2Id, "GPS-TRK-9", "Satellite Container GPS Tracker", "Equipment", "PRODUCT", "unit", 220, 480, 18, 10, coa2["4000"], coa2["5000"], coa2["1200"]);
+  const i2a = Number(insItem.run(comp2Id, "FRT-40FT", "40ft Sea Freight Charter (Dubai-Berbera)", "Freight", "SERVICE", "trip", toMinor(0), toMinor(14500), 0, 0, coa2["4100"], coa2["5000"], coa2["1200"]).lastInsertRowid);
+  insItem.run(comp2Id, "GPS-TRK-9", "Satellite Container GPS Tracker", "Equipment", "PRODUCT", "unit", toMinor(220), toMinor(480), 18, 10, coa2["4000"], coa2["5000"], coa2["1200"]);
 
   const c2InvJe = addJE(comp2Id, "JE-2026-0002", "2026-10-15", "INV-2026-001", "Sales Invoice INV-2026-001 - Berbera Port Commercial Authority", "INVOICE", null, "USD", [
     { acc: coa2["1100"], desc: "AR - Berbera Port", debit: 30450, credit: 0 },
     { acc: coa2["4100"], desc: "Freight charter revenue", debit: 0, credit: 29000 },
     { acc: coa2["2100"], desc: "5% UAE VAT", debit: 0, credit: 1450 },
   ]);
-  const c2InvId = Number(insInv.run(comp2Id, "INV-2026-001", c2a, "2026-10-15", "2026-11-15", "USD", 1, 29000, 5, 1450, 0, 0, 30450, 30450, "PAID", "2x 40ft Container Charters", c2InvJe).lastInsertRowid);
-  insInvLine.run(c2InvId, i2a, "40ft Sea Freight Charter (Dubai-Berbera)", 2, 14500, 29000);
+  const c2InvId = Number(insInv.run(comp2Id, "INV-2026-001", c2a, "2026-10-15", "2026-11-15", "USD", 1, toMinor(29000), 5, toMinor(1450), 0, toMinor(0), toMinor(30450), toMinor(30450), "PAID", "2x 40ft Container Charters", c2InvJe).lastInsertRowid);
+  insInvLine.run(c2InvId, i2a, "40ft Sea Freight Charter (Dubai-Berbera)", 2, toMinor(14500), toMinor(29000));
   addJE(comp2Id, "JE-2026-0003", "2026-10-28", "PAY-INV-001", "Wire payment received - Berbera Port", "INVOICE_PAYMENT", c2InvId, "USD", [
     { acc: coa2["1010"], desc: "USD Wire receipt", debit: 30450, credit: 0 },
     { acc: coa2["1100"], desc: "Clear AR", debit: 0, credit: 30450 },
@@ -1020,11 +1192,11 @@ function seedIfEmpty(db: DatabaseSync) {
     { acc: coa2["1300"], desc: "5% Input VAT", debit: 800, credit: 0 },
     { acc: coa2["2000"], desc: "AP - DP Maritime", debit: 0, credit: 16800 },
   ]);
-  const c2BillId = Number(insBill.run(comp2Id, "BILL-2026-001", v2a, "2026-11-02", "2026-12-02", "USD", 1, coa2["6300"], 16000, 5, 800, 0, 0, 16800, 0, "OPEN", "October vessel slot fees", c2BillJe).lastInsertRowid);
-  insBillLine.run(c2BillId, null, "Vessel Slot Charter Fee", 2, 8000, 16000);
+  const c2BillId = Number(insBill.run(comp2Id, "BILL-2026-001", v2a, "2026-11-02", "2026-12-02", "USD", 1, coa2["6300"], toMinor(16000), 5, toMinor(800), 0, toMinor(0), toMinor(16800), toMinor(0), "OPEN", "October vessel slot fees", c2BillJe).lastInsertRowid);
+  insBillLine.run(c2BillId, null, "Vessel Slot Charter Fee", 2, toMinor(8000), toMinor(16000));
 
-  insEmp.run(comp2Id, "EMP-101", "Omar Al-Hashimi", "Managing Director", "Executive", "AE-88120", 6500, 500, 1500, "ENBD-44019283", "2024-01-01");
-  insEmp.run(comp2Id, "EMP-102", "Amina Warsame", "Logistics Coordinator", "Operations", "AE-88121", 3800, 400, 800, "ENBD-44019284", "2024-06-01");
+  insEmp.run(comp2Id, "EMP-101", "Omar Al-Hashimi", "Managing Director", "Executive", "AE-88120", toMinor(6500), toMinor(500), toMinor(1500), "ENBD-44019283", "2024-01-01");
+  insEmp.run(comp2Id, "EMP-102", "Amina Warsame", "Logistics Coordinator", "Operations", "AE-88121", toMinor(3800), toMinor(400), toMinor(800), "ENBD-44019284", "2024-06-01");
 
   // Seed Audit Log entry
   db.prepare(`
@@ -1035,9 +1207,13 @@ function seedIfEmpty(db: DatabaseSync) {
     INSERT INTO audit_logs (company_id, user_id, action, entity_type, entity_id, details)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(comp2Id, adminId, "SYSTEM_SEED", "COMPANY", comp2Id, "Initialized Horn Logistics & Supply LLC with multi-currency USD/AED accounts");
+}
 
-  // Unused var silence
-  void c2b;
+export function resetDbForTests(): void {
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
 }
 
 export function getDb(): DatabaseSync {
@@ -1048,8 +1224,14 @@ export function getDb(): DatabaseSync {
   }
   const dbPath = path.join(dataDir, "mizan.db");
   const db = new DatabaseSync(dbPath);
-  initSchema(db);
-  seedIfEmpty(db);
+  try {
+    initSchema(db);
+    migrateMoneyToMinorUnits(db);
+    bootstrapDatabase(db);
+  } catch (err) {
+    db.close();
+    throw err;
+  }
   _db = db;
   return _db;
 }

@@ -83,7 +83,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [calendar, setCalendarState] = useState<CalendarSystem>("gregorian");
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [demoLoginEnabled, setDemoLoginEnabled] = useState(true);
+  const [demoLoginEnabled, setDemoLoginEnabled] = useState(false);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });

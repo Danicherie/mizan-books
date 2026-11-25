@@ -4,8 +4,21 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { localizedAccountName } from "@/lib/i18n";
 import { getTodayIso } from "@/lib/calendar";
+import { toMinor } from "@/lib/money";
 import { useApp } from "../AppContext";
 import { Card, Modal, PageHeader, StatusBadge } from "../ui";
+
+function draftCents(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return Number.NaN;
+  try {
+    return toMinor(parsed);
+  } catch {
+    return Number.NaN;
+  }
+}
 
 interface AccountOpt {
   id: number;
@@ -82,7 +95,13 @@ export function JournalEntriesModule() {
 
   const totalDebit = lines.reduce((s, l) => s + (parseFloat(l.debit) || 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (parseFloat(l.credit) || 0), 0);
-  const isBalanced = totalDebit > 0 && Math.abs(totalDebit - totalCredit) < 0.01;
+  const totalDebitMinor = lines.reduce((sum, line) => sum + draftCents(line.debit), 0);
+  const totalCreditMinor = lines.reduce((sum, line) => sum + draftCents(line.credit), 0);
+  const isBalanced =
+    totalDebitMinor > 0 &&
+    Number.isFinite(totalDebitMinor) &&
+    Number.isFinite(totalCreditMinor) &&
+    totalDebitMinor === totalCreditMinor;
 
   const sourceLabel = (s: string) => {
     const map: Record<string, string> = {

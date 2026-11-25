@@ -8,6 +8,7 @@ out/
 
 # Local SQLite database & WAL files
 data/
+backups/
 *.db
 *.db-shm
 *.db-wal

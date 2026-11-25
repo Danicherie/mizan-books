@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, nextSequenceNumber, postJournalEntry, type JournalLineInput } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import {
+  fromMinor,
+  INVOICE_LINE_MONEY_FIELDS,
+  INVOICE_MONEY_FIELDS,
+  minorFromSql,
+  mulMinor,
+  percentOfMinor,
+  toMinor,
+  withMajorMoney,
+} from "@/lib/money";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -24,8 +34,10 @@ export async function GET(request: Request) {
 
   const linesStmt = db.prepare("SELECT * FROM invoice_lines WHERE invoice_id = ? ORDER BY id ASC");
   const hydrated = invoices.map((inv) => ({
-    ...inv,
-    lines: linesStmt.all(inv.id as number),
+    ...withMajorMoney(inv, INVOICE_MONEY_FIELDS),
+    lines: (linesStmt.all(inv.id as number) as Array<Record<string, unknown>>).map((line) =>
+      withMajorMoney(line, INVOICE_LINE_MONEY_FIELDS)
+    ),
   }));
 
   return NextResponse.json({ invoices: hydrated });
@@ -72,20 +84,24 @@ export async function POST(request: Request) {
       exchangeRate = currencyCode === company.base_currency ? 1 : rateRow?.rate_to_base ?? 1;
     }
 
-    const subtotal = Number(
-      body.lines.reduce((s, l) => s + Number(l.quantity) * Number(l.unit_price), 0).toFixed(2)
-    );
+    let subtotalMinor = 0;
+    const pricedLines = body.lines.map((line) => {
+      const quantity = Number(line.quantity);
+      const unitMinor = toMinor(line.unit_price);
+      const lineMinor = mulMinor(unitMinor, quantity);
+      subtotalMinor += lineMinor;
+      return { ...line, quantity, unitMinor, lineMinor };
+    });
     const vatRate = Number(body.vat_rate ?? company.default_vat_rate);
     const whtRate = Number(body.wht_rate ?? company.default_wht_rate);
-    const vatAmount = Number(((subtotal * vatRate) / 100).toFixed(2));
-    const whtAmount = Number(((subtotal * whtRate) / 100).toFixed(2));
-    const netTotal = Number((subtotal + vatAmount - whtAmount).toFixed(2));
+    const vatMinor = percentOfMinor(subtotalMinor, vatRate);
+    const whtMinor = percentOfMinor(subtotalMinor, whtRate);
+    const netMinor = subtotalMinor + vatMinor - whtMinor;
 
-    // Convert to base currency for General Ledger posting
-    const baseSub = Number((subtotal * exchangeRate).toFixed(2));
-    const baseVat = Number((vatAmount * exchangeRate).toFixed(2));
-    const baseWht = Number((whtAmount * exchangeRate).toFixed(2));
-    const baseNet = Number((baseSub + baseVat - baseWht).toFixed(2));
+    const baseSub = mulMinor(subtotalMinor, exchangeRate);
+    const baseVat = mulMinor(vatMinor, exchangeRate);
+    const baseWht = mulMinor(whtMinor, exchangeRate);
+    const baseNet = baseSub + baseVat - baseWht;
 
     const invNumber = nextSequenceNumber(companyId, "invoices", "invoice_number", "INV");
 
@@ -97,34 +113,32 @@ export async function POST(request: Request) {
     const invAssetAcct = getAccountByCode(companyId, "1200");
 
     const jeLines: JournalLineInput[] = [
-      { account_id: arAcct.id, description: `AR - ${customer.name} (${invNumber})`, debit: baseNet, credit: 0 },
-      { account_id: revAcct.id, description: `Sales Revenue (${invNumber})`, debit: 0, credit: baseSub },
+      { account_id: arAcct.id, description: `AR - ${customer.name} (${invNumber})`, debit: fromMinor(baseNet), credit: 0 },
+      { account_id: revAcct.id, description: `Sales Revenue (${invNumber})`, debit: 0, credit: fromMinor(baseSub) },
     ];
     if (baseVat > 0) {
-      jeLines.push({ account_id: vatAcct.id, description: `Output VAT ${vatRate}% (${invNumber})`, debit: 0, credit: baseVat });
+      jeLines.push({ account_id: vatAcct.id, description: `Output VAT ${vatRate}% (${invNumber})`, debit: 0, credit: fromMinor(baseVat) });
     }
     if (baseWht > 0) {
-      jeLines.push({ account_id: whtRecAcct.id, description: `WHT Credit ${whtRate}% (${invNumber})`, debit: baseWht, credit: 0 });
+      jeLines.push({ account_id: whtRecAcct.id, description: `WHT Credit ${whtRate}% (${invNumber})`, debit: fromMinor(baseWht), credit: 0 });
     }
 
-    // Deduct inventory & add COGS lines if inventory products were selected
     let totalCogs = 0;
     const itemLookup = db.prepare("SELECT * FROM inventory_items WHERE id = ? AND company_id = ?");
     const updateStock = db.prepare("UPDATE inventory_items SET quantity_on_hand = quantity_on_hand - ? WHERE id = ?");
 
-    for (const line of body.lines) {
+    for (const line of pricedLines) {
       if (line.item_id) {
         const item = itemLookup.get(line.item_id, companyId) as { id: number; item_type: string; unit_cost: number } | undefined;
         if (item && item.item_type === "PRODUCT") {
-          const lineCogs = Number((Number(line.quantity) * Number(item.unit_cost)).toFixed(2));
-          totalCogs += lineCogs;
-          updateStock.run(Number(line.quantity), item.id);
+          totalCogs += mulMinor(minorFromSql(item.unit_cost), line.quantity);
+          updateStock.run(line.quantity, item.id);
         }
       }
     }
     if (totalCogs > 0) {
-      jeLines.push({ account_id: cogsAcct.id, description: `COGS (${invNumber})`, debit: totalCogs, credit: 0 });
-      jeLines.push({ account_id: invAssetAcct.id, description: `Inventory issued (${invNumber})`, debit: 0, credit: totalCogs });
+      jeLines.push({ account_id: cogsAcct.id, description: `COGS (${invNumber})`, debit: fromMinor(totalCogs), credit: 0 });
+      jeLines.push({ account_id: invAssetAcct.id, description: `Inventory issued (${invNumber})`, debit: 0, credit: fromMinor(totalCogs) });
     }
 
     const jeId = postJournalEntry({
@@ -151,12 +165,12 @@ export async function POST(request: Request) {
         body.due_date,
         currencyCode,
         exchangeRate,
-        subtotal,
+        subtotalMinor,
         vatRate,
-        vatAmount,
+        vatMinor,
         whtRate,
-        whtAmount,
-        netTotal,
+        whtMinor,
+        netMinor,
         body.notes || "",
         jeId
       );
@@ -166,18 +180,11 @@ export async function POST(request: Request) {
       INSERT INTO invoice_lines (invoice_id, item_id, description, quantity, unit_price, line_total)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
-    for (const l of body.lines) {
-      insLine.run(
-        invoiceId,
-        l.item_id ?? null,
-        l.description,
-        Number(l.quantity),
-        Number(l.unit_price),
-        Number((Number(l.quantity) * Number(l.unit_price)).toFixed(2))
-      );
+    for (const l of pricedLines) {
+      insLine.run(invoiceId, l.item_id ?? null, l.description, l.quantity, l.unitMinor, l.lineMinor);
     }
 
-    logAudit(companyId, auth.user.id, "CREATE_INVOICE", "INVOICE", invoiceId, `Issued ${invNumber} for ${customer.name} (${currencyCode} ${netTotal})`);
+    logAudit(companyId, auth.user.id, "CREATE_INVOICE", "INVOICE", invoiceId, `Issued ${invNumber} for ${customer.name} (${currencyCode} ${fromMinor(netMinor)})`);
     return NextResponse.json({ id: invoiceId, invoice_number: invNumber, journal_entry_id: jeId }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });

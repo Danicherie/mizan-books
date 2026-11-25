@@ -1,17 +1,13 @@
 import crypto from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { getDb } from "./db";
+import { getSessionSecret } from "./session-secret";
 
 const SESSION_COOKIE = "mizan_session";
-const DEFAULT_DEV_SECRET = "mizan-accounting-local-dev-secret-v1";
-const SECRET = process.env.MIZAN_SESSION_SECRET || DEFAULT_DEV_SECRET;
 
-if (process.env.NODE_ENV === "production" && SECRET === DEFAULT_DEV_SECRET) {
-  console.warn("[Mizan Books] WARNING: MIZAN_SESSION_SECRET is using the default dev secret. Set a strong secret in production.");
-}
-
+/** Sample companies and the published demo password exist only when this is exactly "true". */
 export function isDemoLoginEnabled(): boolean {
-  return process.env.ENABLE_DEMO_LOGIN !== "false";
+  return process.env.ENABLE_DEMO_LOGIN === "true";
 }
 
 export type UserRole = "admin" | "accountant" | "viewer";
@@ -41,7 +37,7 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 function signToken(payload: string): string {
-  const sig = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+  const sig = crypto.createHmac("sha256", getSessionSecret()).update(payload).digest("hex");
   return `${payload}.${sig}`;
 }
 
@@ -50,7 +46,7 @@ function verifyToken(token: string): string | null {
   if (idx === -1) return null;
   const payload = token.slice(0, idx);
   const sig = token.slice(idx + 1);
-  const expected = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+  const expected = crypto.createHmac("sha256", getSessionSecret()).update(payload).digest("hex");
   const sigBuf = Buffer.from(sig, "utf8");
   const expBuf = Buffer.from(expected, "utf8");
   if (sigBuf.length !== expBuf.length) return null;

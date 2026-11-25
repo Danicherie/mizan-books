@@ -1,4 +1,6 @@
 import { getDb } from "./db";
+import { fromMinor, minorFromSql, minorToString, toMinor } from "./money";
+export { calculateIncomeTax, computeEmployeePay } from "./payroll-math";
 
 export interface JournalLineInput {
   account_id: number;
@@ -31,6 +33,40 @@ export function getAccountByCode(companyId: number, code: string): { id: number;
   return row;
 }
 
+interface NormalizedLine {
+  account_id: number;
+  description: string;
+  debit: number;
+  credit: number;
+  currency_code: string;
+  exchange_rate: number;
+  foreign_amount: number;
+}
+
+function assertAccountsBelongToCompany(companyId: number, accountIds: number[]) {
+  const unique = [...new Set(accountIds)];
+  const db = getDb();
+  const placeholders = unique.map(() => "?").join(", ");
+  const rows = db
+    .prepare(`SELECT id, company_id FROM accounts WHERE id IN (${placeholders})`)
+    .all(...unique) as Array<{ id: number; company_id: number }>;
+  const owner = new Map(rows.map((row) => [Number(row.id), Number(row.company_id)]));
+  for (const id of unique) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new Error(`Account ${String(id)} is not valid.`);
+    }
+    const accountCompany = owner.get(id);
+    if (accountCompany == null) {
+      throw new Error(`Account ${id} does not exist.`);
+    }
+    if (accountCompany !== companyId) {
+      throw new Error(
+        `Account ${id} belongs to another company. Every journal line must use an account from the same company as the entry.`
+      );
+    }
+  }
+}
+
 export function postJournalEntry(params: {
   company_id: number;
   entry_date: string;
@@ -43,92 +79,94 @@ export function postJournalEntry(params: {
   lines: JournalLineInput[];
 }): number {
   const db = getDb();
-  const validLines = params.lines.filter((l) => Number(l.debit) > 0 || Number(l.credit) > 0);
-  if (validLines.length < 2) {
+  const normalized: NormalizedLine[] = [];
+  for (const line of params.lines) {
+    const debit = toMinor(line.debit || 0);
+    const credit = toMinor(line.credit || 0);
+    if (debit === 0 && credit === 0) continue;
+    if (debit < 0 || credit < 0) throw new Error("Debit and credit amounts must be non-negative.");
+    if (debit > 0 && credit > 0) throw new Error("A line cannot have both debit and credit.");
+    const foreign =
+      line.foreign_amount == null ? debit || credit : toMinor(line.foreign_amount);
+    normalized.push({
+      account_id: Number(line.account_id),
+      description: line.description ?? params.description,
+      debit,
+      credit,
+      currency_code: line.currency_code ?? params.currency_code ?? "ETB",
+      exchange_rate: line.exchange_rate ?? 1,
+      foreign_amount: foreign,
+    });
+  }
+
+  if (normalized.length < 2) {
     throw new Error("A journal entry requires at least two non-zero lines.");
   }
 
-  let totalDebit = 0;
-  let totalCredit = 0;
-  for (const line of validLines) {
-    const d = Number(line.debit || 0);
-    const c = Number(line.credit || 0);
-    if (d < 0 || c < 0) throw new Error("Debit and credit amounts must be non-negative.");
-    if (d > 0 && c > 0) throw new Error("A line cannot have both debit and credit.");
-    totalDebit += d;
-    totalCredit += c;
-  }
-
-  if (Math.abs(totalDebit - totalCredit) > 0.02) {
+  const totalDebit = normalized.reduce((sum, line) => sum + line.debit, 0);
+  const totalCredit = normalized.reduce((sum, line) => sum + line.credit, 0);
+  if (totalDebit !== totalCredit) {
     throw new Error(
-      `Journal entry is out of balance: Debits (${totalDebit.toFixed(2)}) != Credits (${totalCredit.toFixed(2)})`
+      `Journal entry is out of balance: Debits (${minorToString(totalDebit)}) != Credits (${minorToString(totalCredit)}). Debits and credits must match to the cent.`
     );
   }
 
-  const entryNumber = nextSequenceNumber(params.company_id, "journal_entries", "entry_number", "JE");
-  const res = db
-    .prepare(`
-      INSERT INTO journal_entries (company_id, entry_number, entry_date, reference, description, source_type, source_id, status, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'POSTED', ?)
-    `)
-    .run(
-      params.company_id,
-      entryNumber,
-      params.entry_date,
-      params.reference ?? "",
-      params.description,
-      params.source_type ?? "MANUAL",
-      params.source_id ?? null,
-      params.created_by ?? null
-    );
+  assertAccountsBelongToCompany(
+    params.company_id,
+    normalized.map((line) => line.account_id)
+  );
 
-  const jeId = Number(res.lastInsertRowid);
-  const insLine = db.prepare(`
-    INSERT INTO journal_lines (journal_entry_id, account_id, description, debit, credit, currency_code, exchange_rate, foreign_amount)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+  const write = () => {
+    const entryNumber = nextSequenceNumber(params.company_id, "journal_entries", "entry_number", "JE");
+    const res = db
+      .prepare(`
+        INSERT INTO journal_entries (company_id, entry_number, entry_date, reference, description, source_type, source_id, status, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'POSTED', ?)
+      `)
+      .run(
+        params.company_id,
+        entryNumber,
+        params.entry_date,
+        params.reference ?? "",
+        params.description,
+        params.source_type ?? "MANUAL",
+        params.source_id ?? null,
+        params.created_by ?? null
+      );
 
-  for (const line of validLines) {
-    const d = Number(Number(line.debit || 0).toFixed(2));
-    const c = Number(Number(line.credit || 0).toFixed(2));
-    insLine.run(
-      jeId,
-      line.account_id,
-      line.description ?? params.description,
-      d,
-      c,
-      line.currency_code ?? params.currency_code ?? "ETB",
-      line.exchange_rate ?? 1,
-      line.foreign_amount ?? (d || c)
-    );
+    const jeId = Number(res.lastInsertRowid);
+    const insLine = db.prepare(`
+      INSERT INTO journal_lines (journal_entry_id, account_id, description, debit, credit, currency_code, exchange_rate, foreign_amount)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const line of normalized) {
+      insLine.run(
+        jeId,
+        line.account_id,
+        line.description,
+        line.debit,
+        line.credit,
+        line.currency_code,
+        line.exchange_rate,
+        line.foreign_amount
+      );
+    }
+    return jeId;
+  };
+
+  db.exec("BEGIN");
+  try {
+    const jeId = write();
+    db.exec("COMMIT");
+    return jeId;
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // The original error is the one the caller needs.
+    }
+    throw err;
   }
-
-  return jeId;
-}
-
-/**
- * Ethiopian Proclamation No. 979/2016 Progressive Employment Income Tax (ETB)
- * For non-ETB companies, uses a clean regional default (0% in GCC/UAE or configurable)
- */
-export function calculateIncomeTax(taxableIncome: number, taxRegime: string): number {
-  if (taxRegime === "UAE_VAT" || taxRegime === "SA_VAT" || taxRegime === "EXEMPT") {
-    return 0; // No personal income tax in UAE / Saudi Arabia
-  }
-  if (taxRegime === "SO_CUSTOM") {
-    // Somalia simplified employment tax (0% <= 200, 6% 201-500, 12% 501-1000, 18% >1000)
-    if (taxableIncome <= 200) return 0;
-    if (taxableIncome <= 500) return (taxableIncome - 200) * 0.06;
-    if (taxableIncome <= 1000) return 18 + (taxableIncome - 500) * 0.12;
-    return 78 + (taxableIncome - 1000) * 0.18;
-  }
-  // Default: Ethiopian progressive brackets (ETB)
-  if (taxableIncome <= 600) return 0;
-  if (taxableIncome <= 1650) return taxableIncome * 0.1 - 60;
-  if (taxableIncome <= 3200) return taxableIncome * 0.15 - 142.5;
-  if (taxableIncome <= 5250) return taxableIncome * 0.2 - 302.5;
-  if (taxableIncome <= 7800) return taxableIncome * 0.25 - 565;
-  if (taxableIncome <= 10900) return taxableIncome * 0.3 - 955;
-  return taxableIncome * 0.35 - 1500;
 }
 
 export interface AccountBalanceRow {
@@ -147,11 +185,36 @@ export interface AccountBalanceRow {
   balance: number; // positive in normal direction
 }
 
-export function getAccountBalances(companyId: number, asOfDate?: string): AccountBalanceRow[] {
+interface RawBalance extends Omit<AccountBalanceRow, "total_debit" | "total_credit" | "balance"> {
+  debitMinor: number;
+  creditMinor: number;
+}
+
+function normalMinor(row: RawBalance): number {
+  return row.normal_balance === "DEBIT" ? row.debitMinor - row.creditMinor : row.creditMinor - row.debitMinor;
+}
+
+function toPublicBalance(row: RawBalance): AccountBalanceRow {
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    name_am: row.name_am,
+    name_om: row.name_om,
+    name_so: row.name_so,
+    name_ar: row.name_ar,
+    type: row.type,
+    subtype: row.subtype,
+    normal_balance: row.normal_balance,
+    total_debit: fromMinor(row.debitMinor),
+    total_credit: fromMinor(row.creditMinor),
+    balance: fromMinor(normalMinor(row)),
+  };
+}
+
+function loadRawBalances(companyId: number, asOfDate?: string): RawBalance[] {
   const db = getDb();
   const dateClause = asOfDate ? "AND je.entry_date <= ?" : "";
-  const params = asOfDate ? [companyId, asOfDate] : [companyId];
-
   const rows = db
     .prepare(`
       SELECT
@@ -170,105 +233,113 @@ export function getAccountBalances(companyId: number, asOfDate?: string): Accoun
       Omit<AccountBalanceRow, "balance">
     >;
 
-  void params;
-  return rows.map((r) => {
-    const td = Number(r.total_debit || 0);
-    const tc = Number(r.total_credit || 0);
-    const balance = r.normal_balance === "DEBIT" ? td - tc : tc - td;
-    return {
-      ...r,
-      total_debit: Number(td.toFixed(2)),
-      total_credit: Number(tc.toFixed(2)),
-      balance: Number(balance.toFixed(2)),
-    };
-  });
+  return rows.map((row) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    name_am: row.name_am,
+    name_om: row.name_om,
+    name_so: row.name_so,
+    name_ar: row.name_ar,
+    type: row.type,
+    subtype: row.subtype,
+    normal_balance: row.normal_balance,
+    debitMinor: minorFromSql(row.total_debit),
+    creditMinor: minorFromSql(row.total_credit),
+  }));
+}
+
+export function getAccountBalances(companyId: number, asOfDate?: string): AccountBalanceRow[] {
+  return loadRawBalances(companyId, asOfDate).map(toPublicBalance);
+}
+
+function sumNormal(rows: RawBalance[], pred: (row: RawBalance) => boolean): number {
+  return rows.filter(pred).reduce((sum, row) => sum + normalMinor(row), 0);
 }
 
 export function computeFinancialStatements(companyId: number, asOfDate?: string) {
-  const balances = getAccountBalances(companyId, asOfDate);
+  const raw = loadRawBalances(companyId, asOfDate);
 
-  // Trial Balance
-  const trialBalance = balances.map((b) => {
-    const net = b.total_debit - b.total_credit;
+  let trialDebitMinor = 0;
+  let trialCreditMinor = 0;
+  const trialBalance = raw.map((row) => {
+    const net = row.debitMinor - row.creditMinor;
+    const debitMinor = net > 0 ? net : 0;
+    const creditMinor = net < 0 ? -net : 0;
+    trialDebitMinor += debitMinor;
+    trialCreditMinor += creditMinor;
     return {
-      ...b,
-      debit_balance: net > 0 ? Number(net.toFixed(2)) : 0,
-      credit_balance: net < 0 ? Number(Math.abs(net).toFixed(2)) : 0,
+      ...toPublicBalance(row),
+      debit_balance: fromMinor(debitMinor),
+      credit_balance: fromMinor(creditMinor),
     };
   });
-  const totalTrialDebits = Number(trialBalance.reduce((s, r) => s + r.debit_balance, 0).toFixed(2));
-  const totalTrialCredits = Number(trialBalance.reduce((s, r) => s + r.credit_balance, 0).toFixed(2));
 
-  // Profit & Loss
-  const revenues = balances.filter((b) => b.type === "REVENUE");
-  const cogs = balances.filter((b) => b.type === "EXPENSE" && b.subtype === "COGS");
-  const operatingExpenses = balances.filter((b) => b.type === "EXPENSE" && b.subtype !== "COGS");
+  const revenues = raw.filter((row) => row.type === "REVENUE").map(toPublicBalance);
+  const cogs = raw.filter((row) => row.type === "EXPENSE" && row.subtype === "COGS").map(toPublicBalance);
+  const operatingExpenses = raw
+    .filter((row) => row.type === "EXPENSE" && row.subtype !== "COGS")
+    .map(toPublicBalance);
 
-  const totalRevenue = Number(revenues.reduce((s, r) => s + r.balance, 0).toFixed(2));
-  const totalCogs = Number(cogs.reduce((s, r) => s + r.balance, 0).toFixed(2));
-  const grossProfit = Number((totalRevenue - totalCogs).toFixed(2));
-  const totalOperatingExpenses = Number(operatingExpenses.reduce((s, r) => s + r.balance, 0).toFixed(2));
-  const totalExpenses = Number((totalCogs + totalOperatingExpenses).toFixed(2));
-  const netIncome = Number((totalRevenue - totalExpenses).toFixed(2));
+  const totalRevenueMinor = sumNormal(raw, (row) => row.type === "REVENUE");
+  const totalCogsMinor = sumNormal(raw, (row) => row.type === "EXPENSE" && row.subtype === "COGS");
+  const totalOperatingMinor = sumNormal(raw, (row) => row.type === "EXPENSE" && row.subtype !== "COGS");
+  const totalExpensesMinor = totalCogsMinor + totalOperatingMinor;
+  const netIncomeMinor = totalRevenueMinor - totalExpensesMinor;
 
-  // Balance Sheet
-  const assets = balances.filter((b) => b.type === "ASSET");
-  const liabilities = balances.filter((b) => b.type === "LIABILITY");
-  const equity = balances.filter((b) => b.type === "EQUITY");
+  const assets = raw.filter((row) => row.type === "ASSET").map(toPublicBalance);
+  const liabilities = raw.filter((row) => row.type === "LIABILITY").map(toPublicBalance);
+  const equity = raw.filter((row) => row.type === "EQUITY").map(toPublicBalance);
+  const totalAssetsMinor = sumNormal(raw, (row) => row.type === "ASSET");
+  const totalLiabilitiesMinor = sumNormal(raw, (row) => row.type === "LIABILITY");
+  const totalEquityMinor = sumNormal(raw, (row) => row.type === "EQUITY");
+  const totalEquityWithIncomeMinor = totalEquityMinor + netIncomeMinor;
+  const totalLiabilitiesAndEquityMinor = totalLiabilitiesMinor + totalEquityWithIncomeMinor;
 
-  const totalAssets = Number(assets.reduce((s, r) => s + r.balance, 0).toFixed(2));
-  const totalLiabilities = Number(liabilities.reduce((s, r) => s + r.balance, 0).toFixed(2));
-  const totalEquityAccounts = Number(equity.reduce((s, r) => s + r.balance, 0).toFixed(2));
-  const totalEquityWithIncome = Number((totalEquityAccounts + netIncome).toFixed(2));
-  const totalLiabilitiesAndEquity = Number((totalLiabilities + totalEquityWithIncome).toFixed(2));
-
-  // Tax Summary from GL
-  const findBal = (code: string) => balances.find((b) => b.code === code)?.balance ?? 0;
-  const vatOutput = findBal("2100");
-  const vatInput = findBal("1300");
-  const netVatPayable = Number((vatOutput - vatInput).toFixed(2));
-  const whtPayable = findBal("2110");
-  const whtReceivable = findBal("1310");
-  const payePayable = findBal("2200");
-  const pensionPayable = findBal("2210");
+  const findMinor = (code: string) => {
+    const row = raw.find((item) => item.code === code);
+    return row ? normalMinor(row) : 0;
+  };
+  const vatOutputMinor = findMinor("2100");
+  const vatInputMinor = findMinor("1300");
 
   return {
     trialBalance: {
       rows: trialBalance,
-      totalDebits: totalTrialDebits,
-      totalCredits: totalTrialCredits,
-      balanced: Math.abs(totalTrialDebits - totalTrialCredits) < 0.05,
+      totalDebits: fromMinor(trialDebitMinor),
+      totalCredits: fromMinor(trialCreditMinor),
+      balanced: trialDebitMinor === trialCreditMinor,
     },
     profitAndLoss: {
       revenues,
       cogs,
       operatingExpenses,
-      totalRevenue,
-      totalCogs,
-      grossProfit,
-      totalOperatingExpenses,
-      totalExpenses,
-      netIncome,
+      totalRevenue: fromMinor(totalRevenueMinor),
+      totalCogs: fromMinor(totalCogsMinor),
+      grossProfit: fromMinor(totalRevenueMinor - totalCogsMinor),
+      totalOperatingExpenses: fromMinor(totalOperatingMinor),
+      totalExpenses: fromMinor(totalExpensesMinor),
+      netIncome: fromMinor(netIncomeMinor),
     },
     balanceSheet: {
       assets,
       liabilities,
       equity,
-      currentPeriodEarnings: netIncome,
-      totalAssets,
-      totalLiabilities,
-      totalEquity: totalEquityWithIncome,
-      totalLiabilitiesAndEquity,
-      balanced: Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.05,
+      currentPeriodEarnings: fromMinor(netIncomeMinor),
+      totalAssets: fromMinor(totalAssetsMinor),
+      totalLiabilities: fromMinor(totalLiabilitiesMinor),
+      totalEquity: fromMinor(totalEquityWithIncomeMinor),
+      totalLiabilitiesAndEquity: fromMinor(totalLiabilitiesAndEquityMinor),
+      balanced: totalAssetsMinor === totalLiabilitiesAndEquityMinor,
     },
     taxSummary: {
-      vatOutput,
-      vatInput,
-      netVatPayable,
-      whtPayable,
-      whtReceivable,
-      payePayable,
-      pensionPayable,
+      vatOutput: fromMinor(vatOutputMinor),
+      vatInput: fromMinor(vatInputMinor),
+      netVatPayable: fromMinor(vatOutputMinor - vatInputMinor),
+      whtPayable: fromMinor(findMinor("2110")),
+      whtReceivable: fromMinor(findMinor("1310")),
+      payePayable: fromMinor(findMinor("2200")),
+      pensionPayable: fromMinor(findMinor("2210")),
     },
   };
 }
