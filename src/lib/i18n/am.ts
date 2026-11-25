@@ -1,4 +1,5 @@
 import type { Dictionary } from "./types";
+import { en } from "./en";
 
 export const am: Dictionary = {
   appName: "ሚዛን ቡክስ",
@@ -322,4 +323,6 @@ export const am: Dictionary = {
     password: "የይለፍ ቃል",
     auditLogTab: "የኦዲት መዝገብ",
   },
+  // English fallback until a reviewed Amharic marketing translation is added.
+  marketing: en.marketing,
 };

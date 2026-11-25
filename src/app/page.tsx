@@ -1,28 +1,38 @@
-"use client";
+import type { Metadata } from "next";
+import { MarketingHome } from "@/components/marketing/LandingPage";
 
-import React from "react";
-import { AppProvider, useApp } from "@/components/AppContext";
-import { LoginView } from "@/components/LoginView";
-import { AppShell } from "@/components/AppShell";
+const description =
+  "Mizan Books is double-entry accounting for small businesses, in English, Amharic, Afaan Oromo, Somali, and Arabic.";
 
-function RootRouter() {
-  const { user, loadingAuth, t } = useApp();
+export const metadata: Metadata = {
+  title: { absolute: "Mizan Books — Double-entry accounting for small businesses" },
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Mizan Books — Double-entry accounting for small businesses",
+    description,
+    url: "https://mizanbooks.tech",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Mizan Books" }],
+  },
+};
 
-  if (loadingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-emerald-400 text-sm font-medium">
-        {t.common.loading}
-      </div>
-    );
-  }
-
-  return user ? <AppShell /> : <LoginView />;
-}
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Mizan Books",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: "https://mizanbooks.tech",
+  description,
+  inLanguage: ["en", "am", "om", "so", "ar"],
+};
 
 export default function HomePage() {
   return (
-    <AppProvider>
-      <RootRouter />
-    </AppProvider>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <MarketingHome />
+    </>
   );
 }

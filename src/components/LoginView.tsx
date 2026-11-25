@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Scale,
   ShieldCheck,
   Globe,
   ArrowRight,
@@ -12,6 +11,7 @@ import {
   CheckCircle2,
   Smartphone,
 } from "lucide-react";
+import { MizanLockup } from "@/components/brand/MizanLogo";
 import { LANGUAGES } from "@/lib/i18n";
 import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
 import { useApp } from "./AppContext";
@@ -19,6 +19,12 @@ import { useApp } from "./AppContext";
 export function LoginView() {
   const { lang, setLang, t, refreshSession, setActiveCompanyId, demoLoginEnabled } = useApp();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("signup") === "1") {
+      setMode("signup");
+    }
+  }, []);
 
   // Sign In state
   const [email, setEmail] = useState("");
@@ -105,21 +111,13 @@ export function LoginView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 flex flex-col justify-between p-4 sm:p-8">
+    <div className="min-h-screen bg-mb-beige flex flex-col justify-between p-4 sm:p-8">
       {/* Top Language Bar */}
       <div className="max-w-5xl w-full mx-auto flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <Scale className="w-6 h-6 text-slate-950" />
-          </div>
-          <div>
-            <div className="text-lg font-bold text-white tracking-tight">{t.appName}</div>
-            <div className="text-xs text-emerald-300/80">{t.appTagline}</div>
-          </div>
-        </div>
+        <MizanLockup name={t.appName} tagline={t.appTagline} href="/" markClassName="h-11 w-11" nameClassName="text-lg" />
 
-        <div className="flex items-center gap-1 bg-slate-900/70 border border-slate-700/70 p-1 rounded-xl overflow-x-auto max-w-full">
-          <Globe className="w-4 h-4 text-slate-400 mx-1.5 shrink-0" />
+        <div className="flex flex-wrap items-center gap-1 bg-mb-paper border border-mb-line p-1 rounded-xl max-w-full">
+          <Globe className="w-4 h-4 text-mb-ink mx-1.5 shrink-0" aria-hidden="true" />
           {LANGUAGES.map((l) => (
             <button
               key={l.code}
@@ -127,8 +125,8 @@ export function LoginView() {
               onClick={() => setLang(l.code)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
                 lang === l.code
-                  ? "bg-emerald-500 text-slate-950 shadow-xs"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+                  ? "bg-mb-amber text-mb-cocoa shadow-xs"
+                  : "text-mb-ink hover:text-mb-cocoa hover:bg-mb-cream"
               }`}
             >
               {l.nativeLabel}
@@ -138,7 +136,7 @@ export function LoginView() {
       </div>
 
       {/* Main Card */}
-      <div className="max-w-5xl w-full mx-auto my-6 grid lg:grid-cols-12 gap-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-800/40">
+      <div className="max-w-5xl w-full mx-auto my-6 grid lg:grid-cols-12 gap-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-mb-line">
         {/* Left: Sign In or 30-Day Free Trial Sign Up */}
         <div className="lg:col-span-7 p-6 sm:p-10">
           {/* Mode Tabs */}
@@ -163,8 +161,8 @@ export function LoginView() {
               }}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 mode === "signup"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-emerald-700 hover:bg-emerald-50"
+                  ? "bg-mb-amber text-mb-cocoa shadow-xs"
+                  : "text-mb-cocoa hover:bg-mb-cream"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -187,7 +185,7 @@ export function LoginView() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber focus:border-mb-amber"
                   />
                 </div>
 
@@ -200,7 +198,7 @@ export function LoginView() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber focus:border-mb-amber"
                   />
                 </div>
 
@@ -213,7 +211,7 @@ export function LoginView() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
+                  className="w-full py-2.5 px-4 rounded-xl bg-mb-amber hover:bg-mb-amber-deep text-mb-cocoa font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
                 >
                   <span>{submitting ? t.auth.signingIn : t.auth.signIn}</span>
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" />
@@ -225,7 +223,7 @@ export function LoginView() {
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
-                  className="font-bold text-emerald-700 hover:underline cursor-pointer"
+                  className="font-bold text-mb-cocoa hover:underline cursor-pointer"
                 >
                   {t.auth.signUpTab} ({t.auth.freeTrialBadge})
                 </button>
@@ -233,7 +231,7 @@ export function LoginView() {
             </>
           ) : (
             <>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 mb-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-mb-cream text-mb-cocoa border border-mb-line mb-2">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{t.auth.freeTrialBadge}</span>
               </div>
@@ -249,7 +247,7 @@ export function LoginView() {
                       placeholder="e.g. Dawit Alemu"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                   <div>
@@ -259,7 +257,7 @@ export function LoginView() {
                       placeholder="e.g. Rift Valley Trading PLC"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                 </div>
@@ -273,7 +271,7 @@ export function LoginView() {
                       placeholder="you@company.com"
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                   <div>
@@ -285,7 +283,7 @@ export function LoginView() {
                       placeholder="Min. 6 characters"
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
                     />
                   </div>
                 </div>
@@ -330,7 +328,7 @@ export function LoginView() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
+                  className="w-full py-2.5 px-4 rounded-xl bg-mb-amber hover:bg-mb-amber-deep text-mb-cocoa font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-60"
                 >
                   <span>{submitting ? t.auth.creatingAccount : t.auth.startFreeTrial}</span>
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" />
@@ -343,7 +341,7 @@ export function LoginView() {
                 <button
                   type="button"
                   onClick={() => setMode("signin")}
-                  className="font-bold text-emerald-700 hover:underline cursor-pointer"
+                  className="font-bold text-mb-cocoa hover:underline cursor-pointer"
                 >
                   {t.auth.signInTab}
                 </button>
@@ -355,21 +353,21 @@ export function LoginView() {
         {/* Right: Free Trial Benefits + Instant Demo Access */}
         <div className="lg:col-span-5 bg-slate-50 p-6 sm:p-8 border-t lg:border-t-0 lg:border-s border-slate-200 flex flex-col justify-between gap-6">
           {/* 30-Day Free Trial Highlights */}
-          <div className="bg-emerald-950 text-white rounded-2xl p-5 shadow-sm">
+          <div className="bg-mb-cocoa text-mb-cream rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-mb-cream uppercase tracking-wider">
                 <Sparkles className="w-3.5 h-3.5" />
                 {t.auth.freeTrialBadge}
               </span>
-              <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-900 text-emerald-200 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[11px] bg-mb-amber text-mb-cocoa px-2 py-0.5 rounded-full">
                 <Smartphone className="w-3 h-3" /> iOS & Android
               </span>
             </div>
-            <ul className="space-y-2 text-xs text-emerald-50/90">
+            <ul className="space-y-2 text-xs text-mb-cream/90">
               {[t.auth.trialFeature1, t.auth.trialFeature2, t.auth.trialFeature3, t.auth.trialFeature4].map(
                 (feat, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-mb-amber shrink-0 mt-0.5" />
                     <span>{feat}</span>
                   </li>
                 )
@@ -380,7 +378,7 @@ export function LoginView() {
           {/* Quick Demo Roles (hidden automatically when ENABLE_DEMO_LOGIN=false in production) */}
           {demoLoginEnabled && (
           <div>
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-mb-cream text-mb-cocoa">
               {t.auth.quickDemo}
             </span>
             <p className="text-xs text-slate-600 mt-2">{t.auth.quickDemoHint}</p>
@@ -390,10 +388,10 @@ export function LoginView() {
                 type="button"
                 disabled={submitting}
                 onClick={() => quickLogin("admin@mizanbooks.com")}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-sm transition-all text-start cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-mb-cream text-mb-cocoa flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
@@ -408,7 +406,7 @@ export function LoginView() {
                 type="button"
                 disabled={submitting}
                 onClick={() => quickLogin("accountant@mizanbooks.com")}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-sm transition-all text-start cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
@@ -426,7 +424,7 @@ export function LoginView() {
                 type="button"
                 disabled={submitting}
                 onClick={() => quickLogin("viewer@mizanbooks.com")}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 hover:shadow-sm transition-all text-start cursor-pointer"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-mb-amber hover:shadow-sm transition-all text-start cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
@@ -445,7 +443,7 @@ export function LoginView() {
         </div>
       </div>
 
-      <div className="text-center text-xs text-slate-400">
+      <div className="text-center text-xs text-mb-ink">
         English · አማርኛ · Afaan Oromoo · Soomaali · العربية
       </div>
     </div>
