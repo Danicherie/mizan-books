@@ -338,4 +338,78 @@ export interface Dictionary {
     password: string;
     auditLogTab: string;
   };
+  marketing: {
+    skipToContent: string;
+    navFeatures: string;
+    navHow: string;
+    navFaq: string;
+    navAbout: string;
+    navContact: string;
+    signIn: string;
+    getStarted: string;
+    openMenu: string;
+    closeMenu: string;
+    languageLabel: string;
+    heroEyebrow: string;
+    heroTitle: string;
+    heroBody: string;
+    heroPriceNote: string;
+    exampleLabel: string;
+    whatEyebrow: string;
+    whatTitle: string;
+    whatBody: string;
+    whoTitle: string;
+    whoBody: string;
+    featuresEyebrow: string;
+    featuresTitle: string;
+    features: MarketingBlock[];
+    howEyebrow: string;
+    howTitle: string;
+    steps: MarketingBlock[];
+    trustEyebrow: string;
+    trustTitle: string;
+    trust: MarketingBlock[];
+    faqEyebrow: string;
+    faqTitle: string;
+    faqs: MarketingFaq[];
+    ctaTitle: string;
+    ctaBody: string;
+    footerBlurb: string;
+    footerProduct: string;
+    footerCompany: string;
+    footerLegal: string;
+    privacy: string;
+    terms: string;
+    draft: string;
+    rights: string;
+    aboutTitle: string;
+    aboutLead: string;
+    aboutParagraphs: string[];
+    contactTitle: string;
+    contactLead: string;
+    contactBody: string;
+    contactName: string;
+    contactEmail: string;
+    contactMessage: string;
+    contactSubmit: string;
+    contactNotice: string;
+    privacyTitle: string;
+    privacyDraft: string;
+    privacyIntro: string;
+    privacyBlocks: MarketingBlock[];
+    termsTitle: string;
+    termsDraft: string;
+    termsIntro: string;
+    termsBlocks: MarketingBlock[];
+  };
+}
+
+export interface MarketingBlock {
+  title: string;
+  body: string;
+}
+
+export interface MarketingFaq {
+  q: string;
+  a: string;
 }

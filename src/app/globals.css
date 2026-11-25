@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@theme {
+  --color-mb-amber: #e0973a;
+  --color-mb-amber-deep: #c9842c;
+  --color-mb-cream: #f7e9cf;
+  --color-mb-cocoa: #4a2e1f;
+  --color-mb-ink: #6e4b38;
+  --color-mb-beige: #f6ebdd;
+  --color-mb-line: #e6d3bc;
+  --color-mb-paper: #fffbf6;
+}
+
 :root {
   --brand-emerald: #00875a;
   --brand-emerald-dark: #006644;
@@ -14,6 +25,29 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: #f7e9cf;
+  color: #4a2e1f;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 @media print {

@@ -1,4 +1,5 @@
 import type { Dictionary } from "./types";
+import { en } from "./en";
 
 export const om: Dictionary = {
   appName: "Mizan Books",
@@ -322,4 +323,6 @@ export const om: Dictionary = {
     password: "Jecha Darbii",
     auditLogTab: "Galmee Odiitii",
   },
+  // English fallback until a reviewed Afaan Oromo marketing translation is added.
+  marketing: en.marketing,
 };

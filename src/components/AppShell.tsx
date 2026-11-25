@@ -13,7 +13,6 @@ import {
   BadgeDollarSign,
   BarChart3,
   Settings,
-  Scale,
   Calendar,
   LogOut,
   Menu,
@@ -23,6 +22,7 @@ import {
   Download,
 } from "lucide-react";
 import { LANGUAGES } from "@/lib/i18n";
+import { MizanLockup, MizanMark } from "@/components/brand/MizanLogo";
 import { useApp, type ActiveTab } from "./AppContext";
 import { ToastBanner } from "./ui";
 import { DashboardModule } from "./modules/DashboardModule";
@@ -135,20 +135,15 @@ export function AppShell() {
   const sidebarContent = (
     <div className="flex flex-col h-full bg-slate-950 text-slate-200 w-64 shrink-0 select-none">
       {/* Brand */}
-      <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800/80">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/20">
-            <Scale className="w-5 h-5 text-slate-950" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold text-white text-base leading-tight truncate">{t.appName}</div>
-            <div className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">Sage-Class ERP</div>
-          </div>
+      <div className="px-3 pt-3 pb-3 flex items-center gap-2 border-b border-slate-800/80">
+        <div className="flex-1 min-w-0 rounded-2xl bg-mb-beige px-2.5 py-2">
+          <MizanLockup name={t.appName} markClassName="h-9 w-9" nameClassName="text-[15px]" />
         </div>
         <button
           type="button"
           onClick={() => setMobileMenu(false)}
           className="lg:hidden p-1 text-slate-400 hover:text-white"
+          aria-label={t.common.close}
         >
           <X className="w-5 h-5" />
         </button>
@@ -271,6 +266,7 @@ export function AppShell() {
             >
               <Menu className="w-5 h-5" />
             </button>
+            <MizanMark className="h-8 w-8 lg:hidden shrink-0" title={t.appName} />
 
             {/* Company Switcher */}
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 min-w-0">
