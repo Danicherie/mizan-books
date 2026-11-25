@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --brand-emerald: #00875a;
+  --brand-emerald-dark: #006644;
+  --brand-mint: #00d639;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", "Noto Sans Ethiopic", "Noto Sans Arabic", "Kefa", "Nyala", "SF Arabic", "Geeza Pro", system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+  }
+  .print-container {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

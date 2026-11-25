@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+mobile/node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Local SQLite database & WAL files
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Environment & secrets
+.env
+.env.local
+.env.production
+
+# OS & Logs
+.DS_Store
+*.log
+*.tsbuildinfo
+npm-debug.log*

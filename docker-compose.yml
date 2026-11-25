@@ -1,0 +1,18 @@
+services:
+  mizan-books:
+    build: .
+    container_name: mizan-books
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      MIZAN_SESSION_SECRET: "${MIZAN_SESSION_SECRET:-change-me-to-a-64-char-random-secret}"
+      ENABLE_DEMO_LOGIN: "${ENABLE_DEMO_LOGIN:-false}"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN:-*}"
+    volumes:
+      - mizan_data:/app/data
+
+volumes:
+  mizan_data:

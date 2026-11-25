@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Mizan Books",
+    "slug": "mizan-books",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#064e3b"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mizanbooks.app"
+    },
+    "android": {
+      "package": "com.mizanbooks.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#059669"
+      }
+    },
+    "extra": {
+      "supportsRTL": true
+    }
+  }
+}
