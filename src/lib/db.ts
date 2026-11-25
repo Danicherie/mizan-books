@@ -3,7 +3,9 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { fromMinor, toMinor } from "./money";
+import { PUBLISHED_PASSWORDS } from "./passwords";
 import { computeEmployeePay } from "./payroll-math";
+import { addDays, TRIAL_LENGTH_DAYS, trialWindow } from "./subscription";
 
 const MONEY_MINOR_MIGRATION = "2026_11_25_money_minor_units";
 
@@ -21,9 +23,9 @@ const MONEY_COLUMNS: Record<string, string[]> = {
   payroll_items: ["gross_salary", "taxable_income", "income_tax", "employee_pension", "employer_pension", "net_salary"],
 };
 
-const PUBLISHED_PASSWORDS = new Set(["password123", "admin", "changeme", "change-me"]);
-
 let _db: DatabaseSync | null = null;
+
+const SUBSCRIPTION_MIGRATION = "2026_11_25_subscription_trial_window";
 
 function hashPw(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -370,9 +372,11 @@ function initSchema(db: DatabaseSync) {
       phone TEXT NOT NULL DEFAULT '',
       email TEXT NOT NULL DEFAULT '',
       plan_name TEXT NOT NULL DEFAULT 'FREE_TRIAL',
-      subscription_status TEXT NOT NULL DEFAULT 'TRIALING',
+      subscription_status TEXT NOT NULL DEFAULT 'trial',
       trial_starts_at TEXT NOT NULL DEFAULT (datetime('now')),
       trial_ends_at TEXT NOT NULL DEFAULT (datetime('now', '+30 days')),
+      paid_until TEXT,
+      subscription_notes TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -614,6 +618,14 @@ function initSchema(db: DatabaseSync) {
       applied_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS operator_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      company_id INTEGER,
+      details TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS company_users (
       company_id INTEGER NOT NULL,
       user_id INTEGER NOT NULL,
@@ -673,6 +685,37 @@ function initSchema(db: DatabaseSync) {
       }
     }
   }
+
+  applySubscriptionMigration(db);
+}
+
+function applySubscriptionMigration(db: DatabaseSync) {
+  const cols = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
+  const colNames = new Set(cols.map((c) => c.name));
+  if (!colNames.has("paid_until")) {
+    db.exec("ALTER TABLE companies ADD COLUMN paid_until TEXT");
+  }
+  if (!colNames.has("subscription_notes")) {
+    db.exec("ALTER TABLE companies ADD COLUMN subscription_notes TEXT NOT NULL DEFAULT ''");
+  }
+
+  const done = db.prepare("SELECT id FROM schema_migrations WHERE id = ?").get(SUBSCRIPTION_MIGRATION) as
+    | { id: string }
+    | undefined;
+  if (done) return;
+
+  const now = new Date();
+  const starts = now.toISOString();
+  const ends = addDays(now, TRIAL_LENGTH_DAYS).toISOString();
+  db.prepare(
+    `UPDATE companies
+     SET subscription_status = 'trial',
+         trial_starts_at = ?,
+         trial_ends_at = ?,
+         plan_name = CASE WHEN plan_name IS NULL OR plan_name = '' THEN 'FREE_TRIAL' ELSE plan_name END
+     WHERE paid_until IS NULL OR trim(paid_until) = '' OR paid_until <= ?`
+  ).run(starts, ends, starts);
+  db.prepare("INSERT INTO schema_migrations (id) VALUES (?)").run(SUBSCRIPTION_MIGRATION);
 }
 
 function columnNeedsMinorConversion(declaredType: string): boolean {
@@ -820,10 +863,15 @@ function createInitialAdmin(db: DatabaseSync) {
 
   if (!companyName) return;
   const currency = (process.env.INITIAL_COMPANY_CURRENCY ?? "").trim() || "ETB";
+  const trial = trialWindow();
   const companyId = Number(
     db
-      .prepare(`INSERT INTO companies (name, legal_name, base_currency, email) VALUES (?, ?, ?, ?)`)
-      .run(companyName, companyName, currency, email).lastInsertRowid
+      .prepare(
+        `INSERT INTO companies (
+           name, legal_name, base_currency, email, plan_name, subscription_status, trial_starts_at, trial_ends_at
+         ) VALUES (?, ?, ?, ?, 'FREE_TRIAL', 'trial', ?, ?)`
+      )
+      .run(companyName, companyName, currency, email, trial.trialStartsAt, trial.trialEndsAt).lastInsertRowid
   );
   seedCompanyChartOfAccounts(db, companyId);
   seedCompanyExchangeRates(db, companyId, currency);

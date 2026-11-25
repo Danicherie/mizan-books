@@ -19,8 +19,22 @@ function resolveRelative(specifier, parentURL) {
   return undefined;
 }
 
+function resolveAlias(specifier) {
+  if (!specifier.startsWith("@/")) return undefined;
+  const base = path.resolve(process.cwd(), "src", specifier.slice(2));
+  if (path.extname(base) && fs.existsSync(base)) return pathToFileURL(base).href;
+  for (const ext of EXTENSIONS) {
+    if (fs.existsSync(base + ext)) return pathToFileURL(base + ext).href;
+  }
+  for (const index of ["index.ts", "index.tsx", "index.js"]) {
+    const candidate = path.join(base, index);
+    if (fs.existsSync(candidate)) return pathToFileURL(candidate).href;
+  }
+  return undefined;
+}
+
 export async function resolve(specifier, context, nextResolve) {
-  const relative = resolveRelative(specifier, context.parentURL);
+  const relative = resolveRelative(specifier, context.parentURL) ?? resolveAlias(specifier);
   if (relative) return { url: relative, shortCircuit: true };
   try {
     return await nextResolve(specifier, context);

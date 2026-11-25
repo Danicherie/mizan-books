@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { computeEmployeePay, computeFinancialStatements, getAccountByCode, postJournalEntry } from "@/lib/accounting";
-import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 import {
   EMPLOYEE_MONEY_FIELDS,
   fromMinor,
@@ -66,12 +68,12 @@ export async function GET(request: Request) {
   const itemsStmt = db.prepare(`
     SELECT pi.*, e.full_name, e.employee_code, e.department
     FROM payroll_items pi
-    JOIN employees e ON e.id = pi.employee_id
+    JOIN employees e ON e.id = pi.employee_id AND e.company_id = ?
     WHERE pi.payroll_run_id = ?
   `);
   const hydratedRuns = runs.map((r) => ({
     ...withMajorMoney(r, PAYROLL_RUN_MONEY_FIELDS),
-    items: (itemsStmt.all(r.id as number) as Array<Record<string, unknown>>).map((item) =>
+    items: (itemsStmt.all(companyId, r.id as number) as Array<Record<string, unknown>>).map((item) =>
       withMajorMoney(item, PAYROLL_ITEM_MONEY_FIELDS)
     ),
   }));
@@ -87,6 +89,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
 
@@ -112,11 +116,13 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
     const company = getCompanyRecord(companyId);
     const db = getDb();
 
     if (body.action === "add_employee") {
-      if (!body.full_name?.trim()) {
+      if (!body.full_name?.trim() || body.full_name.trim().length > 200) {
         return NextResponse.json({ error: "Employee full name is required" }, { status: 400 });
       }
       const count = (db.prepare("SELECT COUNT(*) as c FROM employees WHERE company_id = ?").get(companyId) as { c: number }).c;
@@ -235,6 +241,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

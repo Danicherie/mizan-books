@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, postJournalEntry } from "@/lib/accounting";
-import { getCompanyRecord, requireWrite, userHasCompanyAccess } from "@/lib/api-helpers";
+import { getCompanyRecord, guardCompanyMutation, requireWrite, userHasCompanyAccess } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 import { fromMinor, minorFromSql, mulMinor, toMinor } from "@/lib/money";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
 
@@ -36,6 +40,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!userHasCompanyAccess(auth.user.id, inv.company_id)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+    const blocked = guardCompanyMutation(auth.user, inv.company_id);
+    if (blocked) return blocked;
 
     const totalMinor = minorFromSql(inv.total);
     const paidMinor = minorFromSql(inv.amount_paid);
@@ -72,6 +78,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     logAudit(inv.company_id, auth.user.id, "INVOICE_PAYMENT", "INVOICE", inv.id, `Recorded payment of ${inv.currency_code} ${fromMinor(payAmount)} on ${inv.invoice_number}`);
     return NextResponse.json({ ok: true, status: newStatus, amount_paid: fromMinor(newPaid), journal_entry_id: jeId });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

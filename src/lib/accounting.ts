@@ -12,7 +12,13 @@ export interface JournalLineInput {
   foreign_amount?: number;
 }
 
+const SEQUENCE_TABLES = new Set(["journal_entries", "invoices", "bills"]);
+
 export function nextSequenceNumber(companyId: number, table: "journal_entries" | "invoices" | "bills", column: string, prefix: string): string {
+  if (!SEQUENCE_TABLES.has(table)) {
+    throw new Error("Invalid sequence table.");
+  }
+  void column;
   const db = getDb();
   const row = db
     .prepare(`SELECT COUNT(*) as c FROM ${table} WHERE company_id = ?`)

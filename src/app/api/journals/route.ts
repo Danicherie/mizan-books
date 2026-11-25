@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { postJournalEntry } from "@/lib/accounting";
-import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 import { JOURNAL_MONEY_FIELDS, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
@@ -27,7 +29,8 @@ export async function GET(request: Request) {
   const linesStmt = db.prepare(`
     SELECT jl.*, a.code AS account_code, a.name AS account_name, a.name_am, a.name_om, a.name_so, a.name_ar
     FROM journal_lines jl
-    JOIN accounts a ON a.id = jl.account_id
+    JOIN journal_entries je ON je.id = jl.journal_entry_id
+    JOIN accounts a ON a.id = jl.account_id AND a.company_id = je.company_id
     WHERE jl.journal_entry_id = ?
     ORDER BY jl.id ASC
   `);
@@ -43,6 +46,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
 
@@ -57,7 +62,15 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
     const company = getCompanyRecord(companyId);
+    if (!body.description?.trim() || body.description.length > 500 || !/^\d{4}-\d{2}-\d{2}$/.test(body.entry_date || "")) {
+      return NextResponse.json({ error: "A date and description are required." }, { status: 400 });
+    }
+    if (!Array.isArray(body.lines) || body.lines.length < 2 || body.lines.length > 200) {
+      return NextResponse.json({ error: "A journal entry needs between 2 and 200 lines." }, { status: 400 });
+    }
 
     const jeId = postJournalEntry({
       company_id: companyId,
@@ -73,6 +86,6 @@ export async function POST(request: Request) {
     logAudit(companyId, auth.user.id, "POST_JOURNAL", "JOURNAL_ENTRY", jeId, body.description);
     return NextResponse.json({ id: jeId }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

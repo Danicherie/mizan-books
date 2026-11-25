@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, nextSequenceNumber, postJournalEntry, type JournalLineInput } from "@/lib/accounting";
-import { getCompanyRecord, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { clientErrorResponse } from "@/lib/http";
+import { assertMutationOrigin } from "@/lib/origin";
 import {
   fromMinor,
   INVOICE_LINE_MONEY_FIELDS,
@@ -26,7 +28,7 @@ export async function GET(request: Request) {
     .prepare(`
       SELECT i.*, c.name AS customer_name, c.tin_number AS customer_tin, c.address AS customer_address, c.email AS customer_email
       FROM invoices i
-      JOIN customers c ON c.id = i.customer_id
+      JOIN customers c ON c.id = i.customer_id AND c.company_id = i.company_id
       WHERE i.company_id = ?
       ORDER BY i.issue_date DESC, i.id DESC
     `)
@@ -44,6 +46,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originBlock = assertMutationOrigin(request);
+  if (originBlock) return originBlock;
   const auth = await requireWrite();
   if ("error" in auth) return auth.error;
 
@@ -64,8 +68,10 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
+    const blocked = guardCompanyMutation(auth.user, companyId);
+    if (blocked) return blocked;
     const company = getCompanyRecord(companyId);
-    if (!body.customer_id || !body.lines?.length) {
+    if (!body.customer_id || !body.lines?.length || body.lines.length > 200) {
       return NextResponse.json({ error: "Customer and at least one line item are required" }, { status: 400 });
     }
 
@@ -187,6 +193,6 @@ export async function POST(request: Request) {
     logAudit(companyId, auth.user.id, "CREATE_INVOICE", "INVOICE", invoiceId, `Issued ${invNumber} for ${customer.name} (${currencyCode} ${fromMinor(netMinor)})`);
     return NextResponse.json({ id: invoiceId, invoice_number: invNumber, journal_entry_id: jeId }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 });
+    return clientErrorResponse(err);
   }
 }

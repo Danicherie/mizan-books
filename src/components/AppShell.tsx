@@ -35,6 +35,7 @@ import { InventoryModule } from "./modules/InventoryModule";
 import { PayrollTaxModule } from "./modules/PayrollTaxModule";
 import { ReportsModule } from "./modules/ReportsModule";
 import { SettingsModule } from "./modules/SettingsModule";
+import { ReadOnlyBanner, SubscriptionNeeded, TrialBanner } from "./SubscriptionGate";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -57,10 +58,16 @@ export function AppShell() {
     logout,
     toast,
     trialDaysLeft,
+    subscription,
   } = useApp();
 
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [viewOnly, setViewOnly] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    setViewOnly(false);
+  }, [activeCompany?.id, subscription?.status]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -349,19 +356,33 @@ export function AppShell() {
           </div>
         </header>
 
+        <TrialBanner />
+        {viewOnly && <ReadOnlyBanner />}
+
         {/* Active Module Viewport (extra bottom padding on mobile for bottom tab bar) */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl w-full mx-auto">
-          {activeTab === "dashboard" && <DashboardModule />}
-          {activeTab === "coa" && <ChartOfAccountsModule />}
-          {activeTab === "journals" && <JournalEntriesModule />}
-          {activeTab === "customers" && <ContactsModule mode="customers" />}
-          {activeTab === "invoices" && <InvoicesModule />}
-          {activeTab === "vendors" && <ContactsModule mode="vendors" />}
-          {activeTab === "bills" && <BillsModule />}
-          {activeTab === "inventory" && <InventoryModule />}
-          {activeTab === "payroll" && <PayrollTaxModule />}
-          {activeTab === "reports" && <ReportsModule />}
-          {activeTab === "settings" && <SettingsModule />}
+          {subscription && !subscription.canMutate && !viewOnly ? (
+            <SubscriptionNeeded
+              onContinue={() => {
+                setViewOnly(true);
+                setActiveTab("reports");
+              }}
+            />
+          ) : (
+            <>
+              {activeTab === "dashboard" && <DashboardModule />}
+              {activeTab === "coa" && <ChartOfAccountsModule />}
+              {activeTab === "journals" && <JournalEntriesModule />}
+              {activeTab === "customers" && <ContactsModule mode="customers" />}
+              {activeTab === "invoices" && <InvoicesModule />}
+              {activeTab === "vendors" && <ContactsModule mode="vendors" />}
+              {activeTab === "bills" && <BillsModule />}
+              {activeTab === "inventory" && <InventoryModule />}
+              {activeTab === "payroll" && <PayrollTaxModule />}
+              {activeTab === "reports" && <ReportsModule />}
+              {activeTab === "settings" && <SettingsModule />}
+            </>
+          )}
         </main>
       </div>
 

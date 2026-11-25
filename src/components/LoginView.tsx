@@ -17,14 +17,18 @@ import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
 import { useApp } from "./AppContext";
 
 export function LoginView() {
-  const { lang, setLang, t, refreshSession, setActiveCompanyId, demoLoginEnabled } = useApp();
+  const { lang, setLang, t, refreshSession, setActiveCompanyId, demoLoginEnabled, signupEnabled } = useApp();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
+    if (!signupEnabled) {
+      setMode("signin");
+      return;
+    }
     if (new URLSearchParams(window.location.search).get("signup") === "1") {
       setMode("signup");
     }
-  }, []);
+  }, [signupEnabled]);
 
   // Sign In state
   const [email, setEmail] = useState("");
@@ -51,6 +55,10 @@ export function LoginView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      if (res.status === 429) {
+        setError(t.auth.tooManyAttempts);
+        return;
+      }
       if (!res.ok) {
         setError(t.auth.invalidCreds);
         return;
@@ -79,9 +87,13 @@ export function LoginView() {
           preferred_lang: lang,
         }),
       });
-      const data = (await res.json()) as { error?: string; company?: { id: number } };
+      const data = (await res.json()) as { error?: string; code?: string; company?: { id: number } };
+      if (res.status === 429) {
+        setError(t.auth.tooManyAttempts);
+        return;
+      }
       if (!res.ok) {
-        setError(data.error || t.common.error);
+        setError(data.code === "SIGNUP_DISABLED" ? t.auth.signupClosed : data.error || t.common.error);
         return;
       }
       if (data.company?.id) {
@@ -153,6 +165,7 @@ export function LoginView() {
             >
               {t.auth.signInTab}
             </button>
+            {signupEnabled && (
             <button
               type="button"
               onClick={() => {
@@ -168,9 +181,10 @@ export function LoginView() {
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t.auth.signUpTab}</span>
             </button>
+            )}
           </div>
 
-          {mode === "signin" ? (
+          {(signupEnabled ? mode : "signin") === "signin" ? (
             <>
               <h1 className="text-2xl font-bold text-slate-900">{t.auth.title}</h1>
               <p className="text-sm text-slate-500 mt-1.5">{t.auth.subtitle}</p>
@@ -279,8 +293,8 @@ export function LoginView() {
                     <input
                       type="password"
                       required
-                      minLength={6}
-                      placeholder="Min. 6 characters"
+                      minLength={8}
+                      placeholder={t.auth.passwordHint}
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"

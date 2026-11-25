@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { canWrite, getCurrentUser, isAdmin, type SessionUser } from "./auth";
 import { getDb } from "./db";
+import { evaluateSubscription } from "./subscription";
 
 export async function requireAuth(): Promise<{ user: SessionUser } | { error: NextResponse }> {
   const user = await getCurrentUser();
@@ -38,15 +39,20 @@ export function userHasCompanyAccess(userId: number, companyId: number): boolean
 
 export function getUserCompanies(userId: number) {
   const db = getDb();
-  return db
+  const rows = db
     .prepare(`
-      SELECT c.*
+      SELECT c.*, cu.role AS membership_role
       FROM companies c
       JOIN company_users cu ON cu.company_id = c.id
       WHERE cu.user_id = ?
       ORDER BY c.id ASC
     `)
-    .all(userId);
+    .all(userId) as Array<Record<string, unknown>>;
+  return rows.map((row) => {
+    const copy = { ...row };
+    delete copy.subscription_notes;
+    return copy;
+  });
 }
 
 /**
@@ -78,23 +84,83 @@ export function resolveScopedCompanyId(
 
 export function getCompanyRecord(companyId: number) {
   const db = getDb();
-  return db.prepare("SELECT * FROM companies WHERE id = ?").get(companyId) as {
-    id: number;
-    name: string;
-    legal_name: string;
-    tin_number: string;
-    base_currency: string;
-    country: string;
-    tax_regime: string;
-    default_vat_rate: number;
-    default_wht_rate: number;
-    fiscal_year_start_month: number;
-    address: string;
-    phone: string;
-    email: string;
-    plan_name: string;
-    subscription_status: string;
-    trial_starts_at: string;
-    trial_ends_at: string;
-  };
+  const row = db.prepare("SELECT * FROM companies WHERE id = ?").get(companyId) as
+    | {
+        id: number;
+        name: string;
+        legal_name: string;
+        tin_number: string;
+        base_currency: string;
+        country: string;
+        tax_regime: string;
+        default_vat_rate: number;
+        default_wht_rate: number;
+        fiscal_year_start_month: number;
+        address: string;
+        phone: string;
+        email: string;
+        plan_name: string;
+        subscription_status: string;
+        trial_starts_at: string;
+        trial_ends_at: string;
+        paid_until: string | null;
+        subscription_notes?: string;
+      }
+    | undefined;
+  if (!row) throw new Error("Company not found.");
+  const copy = { ...row };
+  delete copy.subscription_notes;
+  return copy;
+}
+
+function subscriptionBlocked(company: {
+  subscription_status?: string | null;
+  trial_ends_at?: string | null;
+  paid_until?: string | null;
+}): NextResponse | null {
+  const access = evaluateSubscription(company);
+  if (access.canMutate) return null;
+  const error =
+    access.status === "paused"
+      ? "This company is paused. You can view and export data, but changes are turned off."
+      : "Subscription needed. You can view and export data, but changes are turned off until the company is subscribed.";
+  return NextResponse.json({ error, code: "SUBSCRIPTION_REQUIRED", subscription_status: access.status }, { status: 403 });
+}
+
+/**
+ * Membership role is the authority for a company. Viewers can read and export.
+ * Trial expiry, a lapsed paid_until, and pause block every create, edit, and delete.
+ */
+export function guardCompanyMutation(
+  user: SessionUser,
+  companyId: number,
+  options?: { adminOnly?: boolean }
+): NextResponse | null {
+  const db = getDb();
+  const membership = db
+    .prepare("SELECT role FROM company_users WHERE user_id = ? AND company_id = ?")
+    .get(user.id, companyId) as { role: string } | undefined;
+  if (!membership) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (options?.adminOnly) {
+    if (membership.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden: Admin role required" }, { status: 403 });
+    }
+  } else if (!canWrite(membership.role as SessionUser["role"])) {
+    return NextResponse.json({ error: "Forbidden: Read-only access" }, { status: 403 });
+  }
+  return subscriptionBlocked(getCompanyRecord(companyId));
+}
+
+/** A new company is its own trial. Block it when every company this user can see is already locked. */
+export function guardNewCompany(userId: number): NextResponse | null {
+  const companies = getUserCompanies(userId) as Array<{
+    subscription_status?: string | null;
+    trial_ends_at?: string | null;
+    paid_until?: string | null;
+  }>;
+  if (companies.length === 0) return null;
+  if (companies.some((company) => evaluateSubscription(company).canMutate)) return null;
+  return subscriptionBlocked({ subscription_status: "expired", trial_ends_at: "2000-01-01T00:00:00.000Z" });
 }

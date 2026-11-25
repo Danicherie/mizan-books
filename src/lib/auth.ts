@@ -4,6 +4,13 @@ import { getDb } from "./db";
 import { getSessionSecret } from "./session-secret";
 
 const SESSION_COOKIE = "mizan_session";
+export const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function sessionIssuedAtFresh(iat: number, now = Date.now()): boolean {
+  if (!Number.isFinite(iat)) return false;
+  if (iat > now + 60_000) return false;
+  return now - iat <= SESSION_MAX_AGE_MS;
+}
 
 /** Sample companies and the published demo password exist only when this is exactly "true". */
 export function isDemoLoginEnabled(): boolean {
@@ -59,7 +66,7 @@ export function createSessionToken(userId: number): string {
   return signToken(payload);
 }
 
-async function isSecureRequest(): Promise<boolean> {
+export async function sessionCookieSecure(): Promise<boolean> {
   if (process.env.COOKIE_SECURE === "true") return true;
   if (process.env.COOKIE_SECURE === "false") return false;
   try {
@@ -72,7 +79,7 @@ async function isSecureRequest(): Promise<boolean> {
 
 export async function createSessionCookie(userId: number): Promise<string> {
   const token = createSessionToken(userId);
-  const secure = await isSecureRequest();
+  const secure = await sessionCookieSecure();
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -112,7 +119,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const payload = verifyToken(token);
   if (!payload) return null;
   try {
-    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { uid: number };
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { uid?: number; iat?: number };
+    if (!parsed.uid || !sessionIssuedAtFresh(parsed.iat ?? Number.NaN)) return null;
     const db = getDb();
     const row = db
       .prepare("SELECT id, name, email, role, preferred_lang, preferred_calendar FROM users WHERE id = ?")

@@ -18,6 +18,9 @@ services:
       INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-}
       INITIAL_COMPANY_NAME: ${INITIAL_COMPANY_NAME:-}
       INITIAL_COMPANY_CURRENCY: ${INITIAL_COMPANY_CURRENCY:-ETB}
+      # Empty means the /admin page stays off. Do not put a real password in this file.
+      OPERATOR_PASSWORD: ${OPERATOR_PASSWORD:-}
+      SIGNUP_ENABLED: ${SIGNUP_ENABLED:-true}
     volumes:
       - mizan_data:/app/data
 
