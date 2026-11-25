@@ -1,9 +1,11 @@
 "use client";
 
+import { localizeApiError } from "@/lib/i18n/errors";
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Building2, RefreshCw, Shield, Sparkles } from "lucide-react";
 import { evaluateSubscription } from "@/lib/subscription";
 import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
+import { currencyName, taxRegimeName } from "@/lib/i18n";
 import { useApp, type Company } from "../AppContext";
 import { Card, Modal, PageHeader, StatusBadge } from "../ui";
 
@@ -154,7 +156,7 @@ export function SettingsModule() {
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
-      showToast("error", err.error || t.common.error);
+      showToast("error", localizeApiError(t, err.error));
       return;
     }
     const created = (await res.json()) as { company: Company };
@@ -195,7 +197,7 @@ export function SettingsModule() {
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
-      showToast("error", err.error || t.common.error);
+      showToast("error", localizeApiError(t, err.error));
       return;
     }
     showToast("success", t.common.success);
@@ -430,7 +432,7 @@ export function SettingsModule() {
               <select value={compForm.base_currency} onChange={(e) => setCompForm({ ...compForm, base_currency: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.code} — {c.name}
+                    {c.code} — {currencyName(t, c.code, c.name)}
                   </option>
                 ))}
               </select>
@@ -452,7 +454,7 @@ export function SettingsModule() {
               >
                 {TAX_REGIMES.map((tr) => (
                   <option key={tr.code} value={tr.code}>
-                    {tr.label}
+                    {taxRegimeName(t, tr.code, tr.label)}
                   </option>
                 ))}
               </select>

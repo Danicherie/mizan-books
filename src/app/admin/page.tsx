@@ -8,6 +8,15 @@ interface Health {
   version: string;
 }
 
+interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  created_at: string;
+  read_at: string | null;
+}
+
 interface CompanyRow {
   id: number;
   name: string;
@@ -46,6 +55,15 @@ export default function OperatorAdminPage() {
   const [days, setDays] = useState<Record<number, string>>({});
   const [paidUntil, setPaidUntil] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [messageBusy, setMessageBusy] = useState<number | null>(null);
+
+  const loadMessages = useCallback(async () => {
+    const res = await fetch("/api/admin/messages", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { messages: ContactMessage[] };
+    setMessages(data.messages);
+  }, []);
 
   const loadOverview = useCallback(async () => {
     const res = await fetch("/api/admin/overview", { cache: "no-store" });
@@ -61,7 +79,8 @@ export default function OperatorAdminPage() {
     setHealth(data.health);
     setCompanies(data.companies);
     setAuthenticated(true);
-  }, []);
+    await loadMessages();
+  }, [loadMessages]);
 
   useEffect(() => {
     void (async () => {
@@ -96,6 +115,24 @@ export default function OperatorAdminPage() {
     await fetch("/api/admin/logout", { method: "POST" });
     setAuthenticated(false);
     setCompanies([]);
+    setMessages([]);
+  }
+
+  async function messageAct(id: number, action: "mark_read" | "delete") {
+    setMessageBusy(id);
+    setError("");
+    const res = await fetch("/api/admin/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, id }),
+    });
+    setMessageBusy(null);
+    if (!res.ok) {
+      const data = (await res.json()) as { error?: string };
+      setError(data.error || "That change did not save.");
+      return;
+    }
+    await loadMessages();
   }
 
   async function act(companyId: number, action: string, extra: Record<string, unknown> = {}) {
@@ -281,6 +318,54 @@ export default function OperatorAdminPage() {
                 </form>
               ))}
             </div>
+          </section>
+        )}
+
+        {authenticated && (
+          <section className="bg-mb-paper border border-mb-line rounded-2xl p-4 sm:p-6 space-y-4">
+            <h2 className="text-lg font-bold">Messages</h2>
+            <p className="text-sm text-mb-ink">Newest first. These are the notes sent from the public contact form.</p>
+            {messages.length === 0 ? (
+              <p className="text-sm text-mb-ink">No messages yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {messages.map((message) => (
+                  <li key={message.id} className="border border-mb-line rounded-xl p-4 space-y-2">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="font-semibold break-words">
+                        {message.name}{" "}
+                        <span className="font-normal text-mb-ink">&lt;{message.email}&gt;</span>
+                      </p>
+                      <p className="text-xs text-mb-ink">{day(message.created_at)}</p>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-mb-ink">
+                        {message.read_at ? "Read" : "New"}
+                      </span>
+                      {!message.read_at && (
+                        <button
+                          type="button"
+                          disabled={messageBusy === message.id}
+                          onClick={() => void messageAct(message.id, "mark_read")}
+                          className="px-3 py-1.5 rounded-xl bg-mb-cocoa text-mb-cream text-xs font-semibold disabled:opacity-50"
+                        >
+                          Mark read
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={messageBusy === message.id}
+                        onClick={() => void messageAct(message.id, "delete")}
+                        className="px-3 py-1.5 rounded-xl border border-mb-line text-xs font-semibold disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
       </div>

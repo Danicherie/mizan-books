@@ -687,6 +687,27 @@ function initSchema(db: DatabaseSync) {
   }
 
   applySubscriptionMigration(db);
+  applyContactMigration(db);
+}
+
+const CONTACT_MIGRATION = "2026_11_25_contact_messages";
+
+function applyContactMigration(db: DatabaseSync) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      read_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+  const done = db.prepare("SELECT id FROM schema_migrations WHERE id = ?").get(CONTACT_MIGRATION) as
+    | { id: string }
+    | undefined;
+  if (done) return;
+  db.prepare("INSERT INTO schema_migrations (id) VALUES (?)").run(CONTACT_MIGRATION);
 }
 
 function applySubscriptionMigration(db: DatabaseSync) {

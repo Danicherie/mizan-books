@@ -13,6 +13,8 @@ import {
 import { MizanLockup } from "@/components/brand/MizanLogo";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
+import { currencyName, taxRegimeName } from "@/lib/i18n";
+import { localizeApiError } from "@/lib/i18n/errors";
 import { useApp } from "./AppContext";
 
 export function LoginView() {
@@ -92,7 +94,7 @@ export function LoginView() {
         return;
       }
       if (!res.ok) {
-        setError(data.code === "SIGNUP_DISABLED" ? t.auth.signupClosed : data.error || t.common.error);
+        setError(data.code === "SIGNUP_DISABLED" ? t.auth.signupClosed : localizeApiError(t, data.error));
         return;
       }
       if (data.company?.id) {
@@ -238,7 +240,7 @@ export function LoginView() {
                     <label className="block text-xs font-semibold text-mb-ink mb-1">{t.auth.fullName} *</label>
                     <input
                       required
-                      placeholder="e.g. Dawit Alemu"
+                      placeholder={t.auth.namePlaceholder}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
@@ -248,7 +250,7 @@ export function LoginView() {
                     <label className="block text-xs font-semibold text-mb-ink mb-1">{t.auth.companyName} *</label>
                     <input
                       required
-                      placeholder="e.g. Rift Valley Trading PLC"
+                      placeholder={t.auth.companyPlaceholder}
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
@@ -262,7 +264,7 @@ export function LoginView() {
                     <input
                       type="email"
                       required
-                      placeholder="you@company.com"
+                      placeholder={t.auth.emailPlaceholder}
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm focus:outline-none focus:ring-2 focus:ring-mb-amber"
@@ -292,7 +294,7 @@ export function LoginView() {
                     >
                       {SUPPORTED_CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code}>
-                          {c.code} — {c.name}
+                          {c.code} — {currencyName(t, c.code, c.name)}
                         </option>
                       ))}
                     </select>
@@ -306,7 +308,7 @@ export function LoginView() {
                     >
                       {TAX_REGIMES.map((tr) => (
                         <option key={tr.code} value={tr.code}>
-                          {tr.label}
+                          {taxRegimeName(t, tr.code, tr.label)}
                         </option>
                       ))}
                     </select>
@@ -354,7 +356,7 @@ export function LoginView() {
                 {t.auth.freeTrialBadge}
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] bg-mb-amber text-mb-cocoa px-2 py-0.5 rounded-full">
-                <Smartphone className="w-3 h-3" /> iOS & Android
+                <Smartphone className="w-3 h-3" /> {t.auth.mobilePlatforms}
               </span>
             </div>
             <ul className="space-y-2 text-xs text-mb-cream/90">

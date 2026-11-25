@@ -50,3 +50,5 @@ export const SIGNUP_LIMIT = 5;
 export const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 export const ADMIN_LOGIN_LIMIT = 5;
 export const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+export const CONTACT_LIMIT = 5;
+export const CONTACT_WINDOW_MS = 60 * 60 * 1000;

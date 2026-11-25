@@ -1,5 +1,6 @@
 "use client";
 
+import { localizeApiError } from "@/lib/i18n/errors";
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { localizedAccountName } from "@/lib/i18n";
@@ -75,7 +76,7 @@ export function ChartOfAccountsModule() {
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
-      showToast("error", err.error || t.common.error);
+      showToast("error", localizeApiError(t, err.error));
       return;
     }
     showToast("success", t.common.success);

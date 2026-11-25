@@ -1,5 +1,6 @@
 "use client";
 
+import { localizeApiError } from "@/lib/i18n/errors";
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, Printer, CreditCard, Eye } from "lucide-react";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
@@ -153,7 +154,7 @@ export function InvoicesModule() {
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
-      showToast("error", err.error || t.common.error);
+      showToast("error", localizeApiError(t, err.error));
       return;
     }
     showToast("success", t.common.success);
@@ -177,7 +178,7 @@ export function InvoicesModule() {
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
-      showToast("error", err.error || t.common.error);
+      showToast("error", localizeApiError(t, err.error));
       return;
     }
     showToast("success", t.common.success);

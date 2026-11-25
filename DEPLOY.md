@@ -22,6 +22,7 @@ Copy `.env.example` to `.env`. The names below are the ones that matter. Put the
 | `ALLOWED_ORIGIN` | The public address of the site, such as `https://mizanbooks.tech`. Changes made in the browser are rejected unless they come from this address. `*` means “same host name as the request”. If a proxy rewrites the host, set the real public address. |
 | `OPERATOR_PASSWORD` | Password for the owner page at `/admin`. At least 12 characters. Not a sample password. Leave it empty and `/admin` stays off. There is no default. |
 | `SIGNUP_ENABLED` | Leave `true` so a new business can sign up at `/app`. Set `false` to turn public sign-up off. |
+| `CONTACT_EMAIL` | Optional. If set to one email address, the public Contact page shows it. Leave it empty and no email is shown. The form stores messages in the database either way. |
 | `DATA_DIR` | Where `mizan.db` is stored. In Docker this is `/app/data`. |
 | `COOKIE_SECURE` | Set `true` once HTTPS is in front of the app. |
 | `BACKUP_DIR` | A folder on a different disk from the live database, when you can. |

@@ -84,8 +84,8 @@ export function LandingPage() {
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-12 lg:grid-cols-[1.1fr_0.9fr] lg:pb-24 lg:pt-16">
         <div>
           <Eyebrow>{m.heroEyebrow}</Eyebrow>
-          <h1 className="mt-4 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">{m.heroTitle}</h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-mb-ink">{m.heroBody}</p>
+          <h1 className="mt-4 max-w-xl text-3xl font-bold leading-tight tracking-tight break-words sm:text-5xl sm:leading-[1.1] lg:text-6xl">{m.heroTitle}</h1>
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-mb-ink break-words">{m.heroBody}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
               href="/app?signup=1"
@@ -117,11 +117,11 @@ export function LandingPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <article className="rounded-[1.75rem] border border-mb-line bg-mb-paper p-7 sm:p-9">
             <Eyebrow>{m.whatEyebrow}</Eyebrow>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight">{m.whatTitle}</h2>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight break-words">{m.whatTitle}</h2>
             <p className="mt-4 text-base leading-relaxed text-mb-ink">{m.whatBody}</p>
           </article>
           <article className="rounded-[1.75rem] bg-mb-cocoa p-7 text-mb-cream sm:p-9">
-            <h2 className="text-3xl font-bold tracking-tight">{m.whoTitle}</h2>
+            <h2 className="text-3xl font-bold tracking-tight break-words">{m.whoTitle}</h2>
             <p className="mt-4 text-base leading-relaxed text-mb-cream/90">{m.whoBody}</p>
           </article>
         </div>
@@ -180,7 +180,7 @@ export function LandingPage() {
         <div className="mt-6 border-t border-mb-line">
           {m.faqs.map((item) => (
             <details key={item.q} className="group border-b border-mb-line py-1">
-              <summary className={`flex cursor-pointer items-center justify-between gap-4 py-4 text-lg font-semibold ${marketingFocusRing}`}>
+              <summary className={`flex cursor-pointer items-center justify-between gap-4 py-4 text-lg font-semibold break-words ${marketingFocusRing}`}>
                 {item.q}
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-mb-cream text-xl leading-none transition-transform group-open:rotate-45" aria-hidden="true">
                   +

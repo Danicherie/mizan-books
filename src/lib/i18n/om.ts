@@ -1,5 +1,5 @@
 import type { Dictionary } from "./types";
-import { en } from "./en";
+import { omPublic } from "./public/om";
 
 export const om: Dictionary = {
   appName: "Mizan Books",
@@ -89,6 +89,10 @@ export const om: Dictionary = {
     statusExpired: "Kaffaltiin barbaachisa",
     statusPaused: "Dhaabbateera",
     paidUntilLabel: "Kaffaltiin hamma",
+    namePlaceholder: "fakkeenyaaf: Daawit Alamuu",
+    companyPlaceholder: "fakkeenyaaf: Rift Valley Trading PLC",
+    emailPlaceholder: "you@company.com",
+    mobilePlatforms: "iOS fi Android",
   },
   common: {
     save: "Olkaa'i",
@@ -341,6 +345,5 @@ export const om: Dictionary = {
     password: "Jecha Darbii",
     auditLogTab: "Galmee Odiitii",
   },
-  // English fallback until a reviewed Afaan Oromo marketing translation is added.
-  marketing: en.marketing,
+  ...omPublic,
 };

@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { PrivacyPage } from "@/components/marketing/InfoPages";
 
 export const metadata: Metadata = {
-  title: "Privacy (draft)",
-  description: "Draft privacy notes for Mizan Books. Not a finished privacy policy.",
+  title: "Privacy Policy",
+  description: "How Mizan Books handles account details, company books, the session cookie, and server logs.",
   alternates: { canonical: "/privacy" },
-  robots: { index: false, follow: true },
 };
 
 export default function Page() {

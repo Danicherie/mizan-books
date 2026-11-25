@@ -1,4 +1,5 @@
 import type { Dictionary } from "./types";
+import { enPublic } from "./public/en";
 
 export const en: Dictionary = {
   appName: "Mizan Books",
@@ -88,6 +89,10 @@ export const en: Dictionary = {
     statusExpired: "Subscription needed",
     statusPaused: "Paused",
     paidUntilLabel: "Paid until",
+    namePlaceholder: "e.g. Dawit Alemu",
+    companyPlaceholder: "e.g. Rift Valley Trading PLC",
+    emailPlaceholder: "you@company.com",
+    mobilePlatforms: "iOS & Android",
   },
   common: {
     save: "Save",
@@ -340,181 +345,5 @@ export const en: Dictionary = {
     password: "Password",
     auditLogTab: "Audit Trail",
   },
-  marketing: {
-    skipToContent: "Skip to content",
-    navFeatures: "Features",
-    navHow: "How it works",
-    navFaq: "FAQ",
-    navAbout: "About",
-    navContact: "Contact",
-    signIn: "Sign in",
-    getStarted: "Get started",
-    openMenu: "Open menu",
-    closeMenu: "Close menu",
-    languageLabel: "Language",
-    heroEyebrow: "Double-entry accounting for small businesses",
-    heroTitle: "Keep the books in balance.",
-    heroBody:
-      "Mizan Books is a multilingual ledger for a small business. Record journals, invoices, and bills, then read a trial balance, profit and loss, and balance sheet from the same posted entries — in English, Amharic, Afaan Oromo, Somali, or Arabic.",
-    heroPriceNote: "Pricing is not published on this site yet.",
-    exampleLabel: "Example",
-    whatEyebrow: "What Mizan Books is",
-    whatTitle: "A proper set of books, without the fuss.",
-    whatBody:
-      "Mizan is the Arabic word for a balance scale. The app works the same way: a journal is accepted only when the debits equal the credits. Reports are calculated from those posted entries.",
-    whoTitle: "Made for a small business",
-    whoBody:
-      "Use it if you keep the books yourself, or if an owner, an accountant, and someone who only needs to look all share one company. You can keep more than one company, each with its own currency and tax regime.",
-    featuresEyebrow: "What you can do",
-    featuresTitle: "The work the ledger actually does",
-    features: [
-      {
-        title: "Journals that have to balance",
-        body: "A journal needs at least two lines. Debits must equal credits before it can be posted. Invoices, bills, payments, payroll, and stock adjustments post into the same ledger.",
-      },
-      {
-        title: "A chart of accounts",
-        body: "Accounts are grouped as assets, liabilities, equity, revenue, and expenses. Each account can carry a name in English, Amharic, Afaan Oromo, Somali, and Arabic.",
-      },
-      {
-        title: "Reports from the ledger",
-        body: "Trial balance, profit and loss, balance sheet, and a tax summary. The figures come from posted journal lines for the company you have open.",
-      },
-      {
-        title: "Sales, purchases, stock, and pay",
-        body: "Keep customers and invoices, vendors and bills, and inventory with reorder alerts. Payroll can work out income tax and pension for the company's tax regime. Invoices and bills can include VAT and withholding tax.",
-      },
-      {
-        title: "Several companies, three roles",
-        body: "Each company has its own books, base currency, and tax regime. An admin manages the company, an accountant records transactions, and a viewer can look but not edit.",
-      },
-      {
-        title: "Five languages, two calendars",
-        body: "The interface runs in English, Amharic, Afaan Oromo, Somali, or Arabic. Arabic is laid out right to left. Dates can follow the Gregorian or Ethiopian calendar.",
-      },
-    ],
-    howEyebrow: "How it works",
-    howTitle: "Three steps, then the books are open",
-    steps: [
-      {
-        title: "Open a company",
-        body: "Create an account, name the business, and choose a base currency and a tax regime. A starter chart of accounts is ready to use.",
-      },
-      {
-        title: "Record the day",
-        body: "Raise an invoice, enter a bill, or post a journal. The entry is stored only when it balances.",
-      },
-      {
-        title: "Read the reports",
-        body: "Open the trial balance, profit and loss, or balance sheet. What you see is drawn from posted entries.",
-      },
-    ],
-    trustEyebrow: "Care of the books",
-    trustTitle: "A few things the app really does",
-    trust: [
-      {
-        title: "Passwords are hashed",
-        body: "A password is stored as a salted scrypt hash. The app does not keep the original password.",
-      },
-      {
-        title: "Posted entries stay posted",
-        body: "A journal is saved as posted. The app has no screen for editing or deleting it afterwards. Reports count posted entries.",
-      },
-      {
-        title: "Roles limit who can change things",
-        body: "Viewers are read-only. Accountants can record transactions. Admins manage the company, including users.",
-      },
-      {
-        title: "An audit log",
-        body: "Settings keeps an audit log of actions such as posted journals and changes to users.",
-      },
-    ],
-    faqEyebrow: "Questions",
-    faqTitle: "Straight answers",
-    faqs: [
-      {
-        q: "Is this double-entry accounting?",
-        a: "Yes. Every journal has debits and credits, and it can be posted only when they match. Invoices, bills, payments, payroll, and inventory adjustments post into that same ledger.",
-      },
-      {
-        q: "Which languages does it support?",
-        a: "English, Amharic, Afaan Oromo, Somali, and Arabic. Choosing Arabic also switches the layout to right to left. Account names can be stored in each of those languages.",
-      },
-      {
-        q: "Can I keep more than one company?",
-        a: "Yes. Each company has its own books, base currency, and tax regime. You switch company from inside the app.",
-      },
-      {
-        q: "Who can edit the books?",
-        a: "An admin and an accountant can record transactions. A viewer can open the books but cannot change them.",
-      },
-      {
-        q: "What happens after a journal is posted?",
-        a: "It stays posted. There is no edit or delete for that entry in the app. Later reports are built from posted entries.",
-      },
-      {
-        q: "How much does it cost?",
-        a: "Pricing is not published on this website. Use Get started to create an account, or write to us from the contact page. The sign-up screen in the app includes a trial period.",
-      },
-    ],
-    ctaTitle: "Open a set of books.",
-    ctaBody: "Create an account when you are ready. If you already have one, sign in. Prices are not listed here.",
-    footerBlurb: "Multilingual double-entry accounting for a small business.",
-    footerProduct: "Product",
-    footerCompany: "Company",
-    footerLegal: "Legal",
-    privacy: "Privacy",
-    terms: "Terms",
-    draft: "Draft",
-    rights: "Mizan Books",
-    aboutTitle: "About Mizan Books",
-    aboutLead: "Mizan Books is a double-entry accounting application for small businesses that work in more than one language.",
-    aboutParagraphs: [
-      "The name Mizan means balance. In the app, that shows up as a simple rule: a journal is posted only when the debits equal the credits.",
-      "You can keep a chart of accounts, customers and invoices, vendors and bills, inventory, and payroll. Reports — a trial balance, profit and loss, balance sheet, and a tax summary — are calculated from the posted ledger.",
-      "The interface is available in English, Amharic, Afaan Oromo, Somali, and Arabic, with Arabic laid out right to left. Dates can follow the Gregorian or Ethiopian calendar. A company has a base currency and a tax regime; the built-in choices include examples used in Ethiopia, Kenya, Somalia, Saudi Arabia, and the UAE.",
-      "People on a company have a role. An admin manages it, an accountant records transactions, and a viewer can look without editing.",
-    ],
-    contactTitle: "Contact",
-    contactLead: "This page is a draft for the owner to review. It does not send messages yet.",
-    contactBody:
-      "Add the email address or phone number you want visitors to use before you publish this page. Until then, the form below explains that it is not connected.",
-    contactName: "Your name",
-    contactEmail: "Email",
-    contactMessage: "Message",
-    contactSubmit: "This form is not connected",
-    contactNotice: "Nothing was sent. This contact form is a draft and does not deliver messages yet.",
-    privacyTitle: "Privacy",
-    privacyDraft: "Draft for the owner to review. This is not a finished privacy policy.",
-    privacyIntro:
-      "Replace this page with a policy you have actually checked before you rely on it. The notes below only describe, in plain language, the kinds of information the application stores today.",
-    privacyBlocks: [
-      {
-        title: "Account",
-        body: "Signing up stores a name, an email address, a role, and your preferred language and calendar. The password is stored as a salted hash, not as the password you typed.",
-      },
-      {
-        title: "Company books",
-        body: "The books you enter — companies, accounts, journals, invoices, bills, inventory, payroll, and an audit log — are stored for that company.",
-      },
-      {
-        title: "Session",
-        body: "After you sign in, the app keeps a session cookie so it can recognise you on the next visit.",
-      },
-    ],
-    termsTitle: "Terms",
-    termsDraft: "Draft for the owner to review. This is not a finished legal agreement.",
-    termsIntro:
-      "Do not treat this page as the terms of use. It is a placeholder so the site has a terms link. Replace it with text a lawyer has reviewed before you ask anyone to accept it.",
-    termsBlocks: [
-      {
-        title: "What the product is",
-        body: "Mizan Books is accounting software. The person who creates a company is responsible for the entries they post and for who they invite in.",
-      },
-      {
-        title: "No published price",
-        body: "This website does not list a price. Any trial or plan offered inside the app is described there, not on this draft page.",
-      },
-    ],
-  },
+  ...enPublic,
 };
