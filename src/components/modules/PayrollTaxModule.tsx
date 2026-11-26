@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Play, Users, Landmark, ReceiptText } from "lucide-react";
+import { Plus, Play, Users, Landmark, ReceiptText, FileText, Printer } from "lucide-react";
 import { getTodayIso } from "@/lib/calendar";
 import { useApp } from "../AppContext";
-import { Card, KpiCard, Modal, PageHeader, StatusBadge } from "../ui";
+import { Card, CsvButton, exportToCsv, KpiCard, Modal, PageHeader, StatusBadge } from "../ui";
 
 interface EmployeeRow {
   id: number;
@@ -27,6 +27,24 @@ interface EmployeeRow {
   };
 }
 
+interface PayrollRunItem {
+  id: number;
+  employee_code: string;
+  full_name: string;
+  department?: string;
+  job_title?: string;
+  tin_number?: string;
+  bank_account?: string;
+  base_salary?: number;
+  transport_allowance?: number;
+  housing_allowance?: number;
+  gross_salary: number;
+  income_tax: number;
+  employee_pension: number;
+  employer_pension: number;
+  net_salary: number;
+}
+
 interface PayrollRun {
   id: number;
   period_label: string;
@@ -37,16 +55,7 @@ interface PayrollRun {
   total_employer_pension: number;
   total_net: number;
   status: string;
-  items: Array<{
-    id: number;
-    employee_code: string;
-    full_name: string;
-    gross_salary: number;
-    income_tax: number;
-    employee_pension: number;
-    employer_pension: number;
-    net_salary: number;
-  }>;
+  items: PayrollRunItem[];
 }
 
 interface TaxSummary {
@@ -59,16 +68,32 @@ interface TaxSummary {
   pensionPayable: number;
 }
 
+interface TaxFilingDoc {
+  invoice_number?: string;
+  bill_number?: string;
+  issue_date: string;
+  party_name: string;
+  tin_number: string;
+  base_subtotal: number;
+  base_vat: number;
+  base_wht: number;
+}
+
 export function PayrollTaxModule() {
   const { activeCompany, t, formatAmt, formatDt, canWrite, showToast } = useApp();
-  const [subTab, setSubTab] = useState<"employees" | "runs" | "tax">("employees");
+  const [subTab, setSubTab] = useState<"employees" | "runs" | "tax" | "filings">("employees");
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [tax, setTax] = useState<TaxSummary | null>(null);
+  const [filings, setFilings] = useState<{ vatOutputInvoices: TaxFilingDoc[]; vatInputBills: TaxFilingDoc[] }>({
+    vatOutputInvoices: [],
+    vatInputBills: [],
+  });
   const [loading, setLoading] = useState(true);
 
   const [openEmp, setOpenEmp] = useState(false);
   const [openRun, setOpenRun] = useState(false);
+  const [payslip, setPayslip] = useState<{ run: PayrollRun; item: PayrollRunItem } | null>(null);
 
   const [empForm, setEmpForm] = useState({
     full_name: "",
@@ -92,10 +117,12 @@ export function PayrollTaxModule() {
       employees: EmployeeRow[];
       payrollRuns: PayrollRun[];
       taxSummary: TaxSummary;
+      taxFilings?: { vatOutputInvoices: TaxFilingDoc[]; vatInputBills: TaxFilingDoc[] };
     };
     setEmployees(data.employees || []);
     setRuns(data.payrollRuns || []);
     setTax(data.taxSummary || null);
+    setFilings(data.taxFilings || { vatOutputInvoices: [], vatInputBills: [] });
     setLoading(false);
   }, [activeCompany]);
 
@@ -182,12 +209,13 @@ export function PayrollTaxModule() {
       />
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5 no-print">
         {(
           [
             ["employees", t.payroll.employeesTab],
             ["runs", t.payroll.payrollRunsTab],
             ["tax", t.payroll.taxCenterTab],
+            ["filings", t.extras.taxFilingTab],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -274,6 +302,7 @@ export function PayrollTaxModule() {
                         <th className="px-4 py-2 text-end">{t.payroll.employeePension}</th>
                         <th className="px-4 py-2 text-end">{t.payroll.employerPension}</th>
                         <th className="px-4 py-2 text-end">{t.payroll.netPay}</th>
+                        <th className="px-4 py-2 text-end">{t.common.actions}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -288,6 +317,16 @@ export function PayrollTaxModule() {
                           <td className="px-4 py-2.5 text-end tabular-nums">{formatAmt(it.employee_pension)}</td>
                           <td className="px-4 py-2.5 text-end tabular-nums">{formatAmt(it.employer_pension)}</td>
                           <td className="px-4 py-2.5 text-end font-bold tabular-nums text-emerald-700">{formatAmt(it.net_salary)}</td>
+                          <td className="px-4 py-2.5 text-end">
+                            <button
+                              type="button"
+                              onClick={() => setPayslip({ run: r, item: it })}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 font-semibold cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>{t.extras.viewPayslip}</span>
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -297,7 +336,7 @@ export function PayrollTaxModule() {
             ))
           )}
         </div>
-      ) : (
+      ) : subTab === "tax" ? (
         tax && (
           <div className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -317,7 +356,184 @@ export function PayrollTaxModule() {
             </Card>
           </div>
         )
+      ) : (
+        /* Ready-Made Tax Filing Reports (VAT Return, WHT Schedule, Payroll Declaration) */
+        <div className="space-y-6">
+          <Card className="p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">{t.extras.vatReturnTitle}</h3>
+                <p className="text-xs text-slate-500">
+                  {activeCompany?.name} · {t.common.tin}: {activeCompany?.tin_number || "—"}
+                </p>
+              </div>
+              <div className="flex gap-2 no-print">
+                <CsvButton
+                  label={t.common.exportCsv}
+                  onClick={() =>
+                    exportToCsv(
+                      `vat-return-${activeCompany?.name || "company"}.csv`,
+                      ["Type", "Document #", "Date", "Counterparty", "TIN", "Taxable Base", "VAT", "WHT"],
+                      [
+                        ...filings.vatOutputInvoices.map((d) => ["OUTPUT_SALE", d.invoice_number || "", d.issue_date, d.party_name, d.tin_number, d.base_subtotal, d.base_vat, d.base_wht]),
+                        ...filings.vatInputBills.map((d) => ["INPUT_PURCHASE", d.bill_number || "", d.issue_date, d.party_name, d.tin_number, d.base_subtotal, d.base_vat, d.base_wht]),
+                      ]
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>{t.common.print}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase border-y border-slate-200">
+                  <tr>
+                    <th className="px-3 py-2.5 text-start">{t.common.reference}</th>
+                    <th className="px-3 py-2.5 text-start">{t.common.date}</th>
+                    <th className="px-3 py-2.5 text-start">{t.common.name}</th>
+                    <th className="px-3 py-2.5 text-start">{t.common.tin}</th>
+                    <th className="px-3 py-2.5 text-end">{t.common.subtotal}</th>
+                    <th className="px-3 py-2.5 text-end">{t.common.vat}</th>
+                    <th className="px-3 py-2.5 text-end">{t.common.wht}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filings.vatOutputInvoices.map((d, i) => (
+                    <tr key={`o-${i}`}>
+                      <td className="px-3 py-2 font-mono font-bold text-emerald-700">{d.invoice_number}</td>
+                      <td className="px-3 py-2 text-slate-500">{formatDt(d.issue_date)}</td>
+                      <td className="px-3 py-2 font-medium">{d.party_name}</td>
+                      <td className="px-3 py-2 font-mono text-slate-500">{d.tin_number || "—"}</td>
+                      <td className="px-3 py-2 text-end tabular-nums">{formatAmt(d.base_subtotal)}</td>
+                      <td className="px-3 py-2 text-end tabular-nums font-bold text-amber-700">+{formatAmt(d.base_vat)}</td>
+                      <td className="px-3 py-2 text-end tabular-nums text-emerald-700">{formatAmt(d.base_wht)}</td>
+                    </tr>
+                  ))}
+                  {filings.vatInputBills.map((d, i) => (
+                    <tr key={`i-${i}`} className="bg-slate-50/40">
+                      <td className="px-3 py-2 font-mono font-bold text-blue-700">{d.bill_number}</td>
+                      <td className="px-3 py-2 text-slate-500">{formatDt(d.issue_date)}</td>
+                      <td className="px-3 py-2 font-medium">{d.party_name}</td>
+                      <td className="px-3 py-2 font-mono text-slate-500">{d.tin_number || "—"}</td>
+                      <td className="px-3 py-2 text-end tabular-nums">{formatAmt(d.base_subtotal)}</td>
+                      <td className="px-3 py-2 text-end tabular-nums font-bold text-blue-700">-{formatAmt(d.base_vat)}</td>
+                      <td className="px-3 py-2 text-end tabular-nums text-rose-700">{formatAmt(d.base_wht)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {tax && (
+              <div className="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-wrap justify-between gap-4 text-xs font-bold text-emerald-950">
+                <span>{t.payroll.netVatPayable}: {formatAmt(tax.netVatPayable)}</span>
+                <span>{t.payroll.whtPayable}: {formatAmt(tax.whtPayable)}</span>
+                <span>{t.payroll.payePayable}: {formatAmt(tax.payePayable)}</span>
+                <span>{t.payroll.pensionPayable}: {formatAmt(tax.pensionPayable)}</span>
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-bold text-slate-900">{t.extras.payrollDeclTitle}</h3>
+              {runs[0] && (
+                <CsvButton
+                  label={t.common.exportCsv}
+                  onClick={() =>
+                    exportToCsv(
+                      `payroll-tax-declaration-${runs[0].period_label}.csv`,
+                      ["Emp ID", "Employee", "TIN", "Gross", "Income Tax (PAYE)", "Emp Pension (7%)", "Co Pension (11%)", "Net Pay"],
+                      runs[0].items.map((it) => [it.employee_code, it.full_name, it.tin_number || "", it.gross_salary, it.income_tax, it.employee_pension, it.employer_pension, it.net_salary])
+                    )
+                  }
+                />
+              )}
+            </div>
+            {runs[0] ? (
+              <div className="text-xs text-slate-600">
+                Latest period: <strong>{runs[0].period_label}</strong> · PAYE Payable: <strong className="text-rose-700">{formatAmt(runs[0].total_income_tax)}</strong> · Total Pension (7%+11%): <strong>{formatAmt(runs[0].total_employee_pension + runs[0].total_employer_pension)}</strong>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-400">{t.common.noData}</div>
+            )}
+          </Card>
+        </div>
       )}
+
+      {/* Printable Individual Employee Payslip Modal */}
+      <Modal
+        open={!!payslip}
+        onClose={() => setPayslip(null)}
+        title={`${t.extras.payslip} — ${payslip?.item.full_name || ""}`}
+        maxWidth="max-w-xl"
+      >
+        {payslip && activeCompany && (
+          <div className="print-container space-y-5">
+            <div className="flex justify-between items-start border-b border-slate-200 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-emerald-800">{activeCompany.name}</h3>
+                <p className="text-xs text-slate-500">{t.common.tin}: {activeCompany.tin_number || "—"}</p>
+              </div>
+              <div className="text-end">
+                <div className="text-sm font-extrabold text-slate-900">{t.extras.payslip}</div>
+                <div className="text-xs text-slate-600">{payslip.run.period_label}</div>
+                <div className="text-xs text-slate-500">{t.payroll.payDate}: {formatDt(payslip.run.pay_date)}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+              <div><span className="text-slate-400">{t.payroll.fullName}:</span> <strong>{payslip.item.full_name}</strong></div>
+              <div><span className="text-slate-400">{t.payroll.employeeCode}:</span> <strong className="font-mono">{payslip.item.employee_code}</strong></div>
+              <div><span className="text-slate-400">{t.payroll.jobTitle}:</span> <strong>{payslip.item.job_title || "—"}</strong></div>
+              <div><span className="text-slate-400">{t.common.tin}:</span> <strong className="font-mono">{payslip.item.tin_number || "—"}</strong></div>
+              <div className="col-span-2"><span className="text-slate-400">{t.payroll.bankAccount}:</span> <strong className="font-mono">{payslip.item.bank_account || "—"}</strong></div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="border border-slate-200 rounded-xl p-4 space-y-2">
+                <div className="font-bold uppercase text-emerald-800 border-b border-slate-100 pb-1.5">{t.extras.earnings}</div>
+                <div className="flex justify-between"><span>{t.payroll.baseSalary}</span><span className="tabular-nums font-semibold">{formatAmt(payslip.item.base_salary ?? payslip.item.gross_salary)}</span></div>
+                <div className="flex justify-between"><span>{t.payroll.transportAllowance}</span><span className="tabular-nums">{formatAmt(payslip.item.transport_allowance ?? 0)}</span></div>
+                <div className="flex justify-between"><span>{t.payroll.housingAllowance}</span><span className="tabular-nums">{formatAmt(payslip.item.housing_allowance ?? 0)}</span></div>
+                <div className="flex justify-between pt-2 border-t border-slate-200 font-bold text-slate-900"><span>{t.payroll.grossSalary}</span><span className="tabular-nums">{formatAmt(payslip.item.gross_salary)}</span></div>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl p-4 space-y-2">
+                <div className="font-bold uppercase text-rose-800 border-b border-slate-100 pb-1.5">{t.extras.deductions}</div>
+                <div className="flex justify-between"><span>{t.payroll.incomeTax}</span><span className="tabular-nums text-rose-700 font-semibold">-{formatAmt(payslip.item.income_tax)}</span></div>
+                <div className="flex justify-between"><span>{t.payroll.employeePension}</span><span className="tabular-nums text-amber-700 font-semibold">-{formatAmt(payslip.item.employee_pension)}</span></div>
+                <div className="flex justify-between text-slate-400"><span>{t.payroll.employerPension}</span><span className="tabular-nums">{formatAmt(payslip.item.employer_pension)}</span></div>
+                <div className="flex justify-between pt-2 border-t border-slate-200 font-bold text-rose-800"><span>{t.common.total}</span><span className="tabular-nums">-{formatAmt(payslip.item.income_tax + payslip.item.employee_pension)}</span></div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-900 text-white flex justify-between items-center">
+              <span className="text-sm font-bold">{t.payroll.netPay}</span>
+              <span className="text-xl font-extrabold text-emerald-400 tabular-nums">{formatAmt(payslip.item.net_salary)}</span>
+            </div>
+
+            <div className="flex justify-end no-print">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>{t.common.print}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Add Employee Modal */}
       <Modal open={openEmp} onClose={() => setOpenEmp(false)} title={t.payroll.addEmployee}>

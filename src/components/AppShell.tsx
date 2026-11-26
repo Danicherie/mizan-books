@@ -21,6 +21,10 @@ import {
   Building2,
   Sparkles,
   Download,
+  Landmark,
+  ShoppingCart,
+  PieChart,
+  BellRing,
 } from "lucide-react";
 import { LANGUAGES } from "@/lib/i18n";
 import { useApp, type ActiveTab } from "./AppContext";
@@ -35,6 +39,10 @@ import { InventoryModule } from "./modules/InventoryModule";
 import { PayrollTaxModule } from "./modules/PayrollTaxModule";
 import { ReportsModule } from "./modules/ReportsModule";
 import { SettingsModule } from "./modules/SettingsModule";
+import { ReconciliationModule } from "./modules/ReconciliationModule";
+import { BudgetsCashFlowModule } from "./modules/BudgetsCashFlowModule";
+import { PosModule } from "./modules/PosModule";
+import { PaymentsAlertsModule } from "./modules/PaymentsAlertsModule";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -93,6 +101,7 @@ export function AppShell() {
       items: [
         { id: "coa", label: t.nav.chartOfAccounts, icon: <FileSpreadsheet className="w-4 h-4" /> },
         { id: "journals", label: t.nav.journalEntries, icon: <BookOpen className="w-4 h-4" /> },
+        { id: "reconciliation", label: t.nav.bankRecon, icon: <Landmark className="w-4 h-4" /> },
       ],
     },
     {
@@ -100,6 +109,7 @@ export function AppShell() {
       items: [
         { id: "customers", label: t.nav.customers, icon: <Users className="w-4 h-4" /> },
         { id: "invoices", label: t.nav.invoices, icon: <FileText className="w-4 h-4" /> },
+        { id: "pos", label: t.nav.pos, icon: <ShoppingCart className="w-4 h-4" /> },
       ],
     },
     {
@@ -114,12 +124,14 @@ export function AppShell() {
       items: [
         { id: "inventory", label: t.nav.inventory, icon: <Package className="w-4 h-4" /> },
         { id: "payroll", label: t.nav.payrollTax, icon: <BadgeDollarSign className="w-4 h-4" /> },
+        { id: "paymentsAlerts", label: t.nav.paymentsAlerts, icon: <BellRing className="w-4 h-4" /> },
       ],
     },
     {
       label: t.nav.reports,
       items: [
         { id: "reports", label: t.nav.financialReports, icon: <BarChart3 className="w-4 h-4" /> },
+        { id: "budgets", label: t.nav.budgetsCashFlow, icon: <PieChart className="w-4 h-4" /> },
         { id: "settings", label: t.nav.settings, icon: <Settings className="w-4 h-4" /> },
       ],
     },
@@ -358,12 +370,16 @@ export function AppShell() {
           {activeTab === "dashboard" && <DashboardModule />}
           {activeTab === "coa" && <ChartOfAccountsModule />}
           {activeTab === "journals" && <JournalEntriesModule />}
+          {activeTab === "reconciliation" && <ReconciliationModule />}
           {activeTab === "customers" && <ContactsModule mode="customers" />}
           {activeTab === "invoices" && <InvoicesModule />}
+          {activeTab === "pos" && <PosModule />}
           {activeTab === "vendors" && <ContactsModule mode="vendors" />}
           {activeTab === "bills" && <BillsModule />}
           {activeTab === "inventory" && <InventoryModule />}
           {activeTab === "payroll" && <PayrollTaxModule />}
+          {activeTab === "budgets" && <BudgetsCashFlowModule />}
+          {activeTab === "paymentsAlerts" && <PaymentsAlertsModule />}
           {activeTab === "reports" && <ReportsModule />}
           {activeTab === "settings" && <SettingsModule />}
         </main>

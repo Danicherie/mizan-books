@@ -48,7 +48,8 @@ export async function GET(request: Request) {
     .all(companyId) as Array<Record<string, unknown>>;
 
   const itemsStmt = db.prepare(`
-    SELECT pi.*, e.full_name, e.employee_code, e.department
+    SELECT pi.*, e.full_name, e.employee_code, e.department, e.job_title, e.tin_number, e.bank_account,
+           e.base_salary, e.transport_allowance, e.housing_allowance
     FROM payroll_items pi
     JOIN employees e ON e.id = pi.employee_id
     WHERE pi.payroll_run_id = ?
@@ -60,11 +61,41 @@ export async function GET(request: Request) {
 
   const statements = computeFinancialStatements(companyId);
 
+  const vatOutputInvoices = db
+    .prepare(`
+      SELECT i.invoice_number, i.issue_date, c.name AS party_name, c.tin_number,
+             i.subtotal * i.exchange_rate AS base_subtotal,
+             i.vat_amount * i.exchange_rate AS base_vat,
+             i.wht_amount * i.exchange_rate AS base_wht
+      FROM invoices i
+      JOIN customers c ON c.id = i.customer_id
+      WHERE i.company_id = ? AND (i.vat_amount > 0 OR i.wht_amount > 0)
+      ORDER BY i.issue_date DESC
+    `)
+    .all(companyId);
+
+  const vatInputBills = db
+    .prepare(`
+      SELECT b.bill_number, b.issue_date, v.name AS party_name, v.tin_number,
+             b.subtotal * b.exchange_rate AS base_subtotal,
+             b.vat_amount * b.exchange_rate AS base_vat,
+             b.wht_amount * b.exchange_rate AS base_wht
+      FROM bills b
+      JOIN vendors v ON v.id = b.vendor_id
+      WHERE b.company_id = ? AND (b.vat_amount > 0 OR b.wht_amount > 0)
+      ORDER BY b.issue_date DESC
+    `)
+    .all(companyId);
+
   return NextResponse.json({
     company,
     employees: employeesWithPreview,
     payrollRuns: hydratedRuns,
     taxSummary: statements.taxSummary,
+    taxFilings: {
+      vatOutputInvoices,
+      vatInputBills,
+    },
   });
 }
 

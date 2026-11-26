@@ -37,12 +37,16 @@ export type ActiveTab =
   | "dashboard"
   | "coa"
   | "journals"
+  | "reconciliation"
   | "customers"
   | "invoices"
+  | "pos"
   | "vendors"
   | "bills"
   | "inventory"
   | "payroll"
+  | "budgets"
+  | "paymentsAlerts"
   | "reports"
   | "settings";
 

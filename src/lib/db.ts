@@ -598,9 +598,93 @@ function initSchema(db: DatabaseSync) {
       FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS bank_statements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      account_id INTEGER NOT NULL,
+      statement_date TEXT NOT NULL,
+      description TEXT NOT NULL,
+      reference TEXT NOT NULL DEFAULT '',
+      amount REAL NOT NULL,
+      matched_journal_line_id INTEGER,
+      status TEXT NOT NULL DEFAULT 'UNMATCHED',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS budgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      account_id INTEGER NOT NULL,
+      period_month TEXT NOT NULL,
+      budget_amount REAL NOT NULL DEFAULT 0,
+      notes TEXT NOT NULL DEFAULT '',
+      UNIQUE(company_id, account_id, period_month),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS pos_sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      receipt_number TEXT NOT NULL,
+      sale_date TEXT NOT NULL,
+      customer_name TEXT NOT NULL DEFAULT 'Walk-in Customer',
+      payment_method TEXT NOT NULL DEFAULT 'CASH',
+      subtotal REAL NOT NULL DEFAULT 0,
+      vat_rate REAL NOT NULL DEFAULT 15,
+      vat_amount REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      journal_entry_id INTEGER,
+      created_by INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS pos_sale_lines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pos_sale_id INTEGER NOT NULL,
+      item_id INTEGER,
+      description TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit_price REAL NOT NULL DEFAULT 0,
+      line_total REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY (pos_sale_id) REFERENCES pos_sales(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS payment_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      provider TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      reference_id INTEGER,
+      tx_ref TEXT NOT NULL UNIQUE,
+      currency_code TEXT NOT NULL DEFAULT 'ETB',
+      amount REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      checkout_url TEXT NOT NULL DEFAULT '',
+      mode TEXT NOT NULL DEFAULT 'SANDBOX',
+      meta_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS notification_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      channel TEXT NOT NULL,
+      recipient TEXT NOT NULL,
+      entity_type TEXT NOT NULL DEFAULT 'INVOICE',
+      entity_id INTEGER,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'SIMULATED',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
   `);
 
-  // Safe migration for existing SQLite databases created before trial/subscription columns
+  // Safe migration for existing SQLite databases created before trial/subscription/alert/receipt columns
   const cols = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
   const colNames = new Set(cols.map((c) => c.name));
   if (!colNames.has("plan_name")) {
@@ -616,6 +700,62 @@ function initSchema(db: DatabaseSync) {
   if (!colNames.has("trial_ends_at")) {
     db.exec("ALTER TABLE companies ADD COLUMN trial_ends_at TEXT NOT NULL DEFAULT ''");
     db.exec("UPDATE companies SET trial_ends_at = datetime('now', '+30 days') WHERE trial_ends_at = ''");
+  }
+  if (!colNames.has("telegram_chat_id")) {
+    db.exec("ALTER TABLE companies ADD COLUMN telegram_chat_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has("sms_sender_id")) {
+    db.exec("ALTER TABLE companies ADD COLUMN sms_sender_id TEXT NOT NULL DEFAULT 'MizanBooks'");
+  }
+
+  const billCols = db.prepare("PRAGMA table_info(bills)").all() as Array<{ name: string }>;
+  if (!billCols.some((c) => c.name === "receipt_filename")) {
+    db.exec("ALTER TABLE bills ADD COLUMN receipt_filename TEXT NOT NULL DEFAULT ''");
+  }
+
+  // Seed sample budgets & bank statement rows for demo company #1 if empty
+  const demoComp = db.prepare("SELECT id FROM companies WHERE name = 'Addis Horizon Trading PLC' LIMIT 1").get() as
+    | { id: number }
+    | undefined;
+  if (demoComp) {
+    const bCount = (db.prepare("SELECT COUNT(*) as c FROM budgets WHERE company_id = ?").get(demoComp.id) as { c: number }).c;
+    if (bCount === 0) {
+      const acctRows = db
+        .prepare("SELECT id, code FROM accounts WHERE company_id = ? AND code IN ('4000','4100','5000','6000','6100','6200','6300')")
+        .all(demoComp.id) as Array<{ id: number; code: string }>;
+      const byCode = Object.fromEntries(acctRows.map((a) => [a.code, a.id]));
+      const monthKey = new Date().toISOString().slice(0, 7);
+      const insB = db.prepare("INSERT OR IGNORE INTO budgets (company_id, account_id, period_month, budget_amount, notes) VALUES (?, ?, ?, ?, ?)");
+      const defaults: Array<[string, number, string]> = [
+        ["4000", 850000, "Monthly product sales target"],
+        ["4100", 220000, "ERP & advisory services target"],
+        ["5000", 480000, "Estimated cost of sales"],
+        ["6000", 130000, "Monthly payroll budget"],
+        ["6100", 70000, "HQ office rent & facilities"],
+        ["6200", 35000, "Fiber internet & telecom"],
+        ["6300", 100000, "Freight & customs corridor"],
+      ];
+      for (const [code, amt, note] of defaults) {
+        if (byCode[code]) insB.run(demoComp.id, byCode[code], monthKey, amt, note);
+      }
+    }
+
+    const bsCount = (db.prepare("SELECT COUNT(*) as c FROM bank_statements WHERE company_id = ?").get(demoComp.id) as { c: number }).c;
+    if (bsCount === 0) {
+      const bankAcc = db
+        .prepare("SELECT id FROM accounts WHERE company_id = ? AND code = '1010' LIMIT 1")
+        .get(demoComp.id) as { id: number } | undefined;
+      if (bankAcc) {
+        const insStmt = db.prepare(`
+          INSERT INTO bank_statements (company_id, account_id, statement_date, description, reference, amount, status)
+          VALUES (?, ?, ?, ?, ?, ?, 'UNMATCHED')
+        `);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-09-25", "CBE Transfer - Awash Specialty Coffee", "PAY-INV-001", 598900);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-10-15", "RTGS Outgoing - Bole Business Tower", "PAY-BILL-001", -135600);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-10-18", "CBE Deposit - Oromia Tech Partial", "PAY-INV-002", 250000);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-10-31", "Monthly Bank Maintenance & SMS Fee", "BANK-FEE-10", -450);
+      }
+    }
   }
 
   // Backfill company_users memberships for existing databases cleanly
