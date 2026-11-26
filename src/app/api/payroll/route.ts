@@ -8,6 +8,7 @@ import {
   EMPLOYEE_MONEY_FIELDS,
   fromMinor,
   minorFromSql,
+  mulMinor,
   PAYROLL_ITEM_MONEY_FIELDS,
   PAYROLL_RUN_MONEY_FIELDS,
   toMinor,
@@ -66,7 +67,8 @@ export async function GET(request: Request) {
     .all(companyId) as Array<Record<string, unknown>>;
 
   const itemsStmt = db.prepare(`
-    SELECT pi.*, e.full_name, e.employee_code, e.department
+    SELECT pi.*, e.full_name, e.employee_code, e.department, e.job_title, e.tin_number, e.bank_account,
+           e.base_salary, e.transport_allowance, e.housing_allowance
     FROM payroll_items pi
     JOIN employees e ON e.id = pi.employee_id AND e.company_id = ?
     WHERE pi.payroll_run_id = ?
@@ -74,17 +76,60 @@ export async function GET(request: Request) {
   const hydratedRuns = runs.map((r) => ({
     ...withMajorMoney(r, PAYROLL_RUN_MONEY_FIELDS),
     items: (itemsStmt.all(companyId, r.id as number) as Array<Record<string, unknown>>).map((item) =>
-      withMajorMoney(item, PAYROLL_ITEM_MONEY_FIELDS)
+      withMajorMoney(withMajorMoney(item, PAYROLL_ITEM_MONEY_FIELDS), EMPLOYEE_MONEY_FIELDS)
     ),
   }));
 
   const statements = computeFinancialStatements(companyId);
+
+  const toBaseMajor = (rows: Array<Record<string, unknown>>) =>
+    rows.map((row) => {
+      const rate = Number(row.exchange_rate ?? 1);
+      const { exchange_rate: _rate, subtotal, vat_amount, wht_amount, ...rest } = row;
+      void _rate;
+      return {
+        ...rest,
+        base_subtotal: fromMinor(mulMinor(minorFromSql(subtotal), rate)),
+        base_vat: fromMinor(mulMinor(minorFromSql(vat_amount), rate)),
+        base_wht: fromMinor(mulMinor(minorFromSql(wht_amount), rate)),
+      };
+    });
+
+  const vatOutputInvoices = toBaseMajor(
+    db
+      .prepare(`
+        SELECT i.invoice_number, i.issue_date, c.name AS party_name, c.tin_number,
+               i.subtotal, i.vat_amount, i.wht_amount, i.exchange_rate
+        FROM invoices i
+        JOIN customers c ON c.id = i.customer_id
+        WHERE i.company_id = ? AND (i.vat_amount > 0 OR i.wht_amount > 0)
+        ORDER BY i.issue_date DESC
+      `)
+      .all(companyId) as Array<Record<string, unknown>>
+  );
+
+  const vatInputBills = toBaseMajor(
+    db
+      .prepare(`
+        SELECT b.bill_number, b.issue_date, v.name AS party_name, v.tin_number,
+               b.subtotal, b.vat_amount, b.wht_amount, b.exchange_rate
+        FROM bills b
+        JOIN vendors v ON v.id = b.vendor_id
+        WHERE b.company_id = ? AND (b.vat_amount > 0 OR b.wht_amount > 0)
+        ORDER BY b.issue_date DESC
+      `)
+      .all(companyId) as Array<Record<string, unknown>>
+  );
 
   return NextResponse.json({
     company,
     employees: employeesWithPreview,
     payrollRuns: hydratedRuns,
     taxSummary: statements.taxSummary,
+    taxFilings: {
+      vatOutputInvoices,
+      vatInputBills,
+    },
   });
 }
 

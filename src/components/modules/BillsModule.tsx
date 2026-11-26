@@ -2,7 +2,7 @@
 
 import { localizeApiError } from "@/lib/i18n/errors";
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, CreditCard } from "lucide-react";
+import { Plus, Trash2, CreditCard, Camera, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { getTodayIso } from "@/lib/calendar";
 import { localizedAccountName } from "@/lib/i18n";
@@ -24,6 +24,7 @@ interface BillRow {
   total: number;
   amount_paid: number;
   status: string;
+  receipt_filename?: string;
 }
 
 interface VendorOpt {
@@ -54,6 +55,7 @@ export function BillsModule() {
 
   const [openNew, setOpenNew] = useState(false);
   const [payBill, setPayBill] = useState<BillRow | null>(null);
+  const [viewReceiptBill, setViewReceiptBill] = useState<BillRow | null>(null);
 
   const [vendorId, setVendorId] = useState("");
   const [expenseAccountId, setExpenseAccountId] = useState("");
@@ -163,6 +165,36 @@ export function BillsModule() {
     void load();
   }
 
+  function handleAttachReceipt(billId: number, file: File | undefined) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      if (typeof reader.result !== "string") return;
+      const res = await fetch("/api/receipts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billId, dataUrl: reader.result }),
+      });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: string };
+        showToast("error", err.error || t.common.error);
+        return;
+      }
+      showToast("success", t.common.success);
+      void load();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  const nowMs = Date.now();
+  const overdueBills = bills.filter(
+    (b) => b.total - b.amount_paid > 0.01 && new Date(b.due_date).getTime() < nowMs
+  );
+  const dueSoonBills = bills.filter((b) => {
+    const diffDays = (new Date(b.due_date).getTime() - nowMs) / (1000 * 60 * 60 * 24);
+    return b.total - b.amount_paid > 0.01 && diffDays >= 0 && diffDays <= 7;
+  });
+
   return (
     <div>
       <PageHeader
@@ -181,6 +213,19 @@ export function BillsModule() {
           )
         }
       />
+
+      {(overdueBills.length > 0 || dueSoonBills.length > 0) && (
+        <div className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <div>
+              <strong>{t.extras.dueReminders}:</strong>{" "}
+              {overdueBills.length > 0 && `${overdueBills.length} ${t.extras.overdueBillsAlert}. `}
+              {dueSoonBills.length > 0 && `${dueSoonBills.length} ${t.extras.dueSoonBillsAlert}.`}
+            </div>
+          </div>
+        </div>
+      )}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -231,20 +276,48 @@ export function BillsModule() {
                       <td className="px-4 py-3 text-center">
                         <StatusBadge status={b.status} label={b.status === "PAID" ? t.common.paid : b.status === "PARTIAL" ? t.common.partial : t.common.open} />
                       </td>
-                      <td className="px-4 py-3 text-end">
-                        {canWrite && due > 0.01 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPayBill(b);
-                              setPayAmount(String(due));
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-cream cursor-pointer"
-                          >
-                            <CreditCard className="w-3.5 h-3.5" />
-                            <span>{t.common.recordPayment}</span>
-                          </button>
-                        )}
+                      <td className="px-4 py-3 text-end whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          {b.receipt_filename ? (
+                            <button
+                              type="button"
+                              onClick={() => setViewReceiptBill(b)}
+                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-cream cursor-pointer"
+                              title={t.extras.viewReceipt}
+                            >
+                              <ImageIcon className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            canWrite && (
+                              <label
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-mb-line text-mb-ink hover:bg-mb-cream cursor-pointer"
+                                title={t.extras.snapReceipt}
+                              >
+                                <Camera className="w-3.5 h-3.5" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="environment"
+                                  className="hidden"
+                                  onChange={(e) => handleAttachReceipt(b.id, e.target.files?.[0])}
+                                />
+                              </label>
+                            )
+                          )}
+                          {canWrite && due > 0.01 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPayBill(b);
+                                setPayAmount(String(due));
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-mb-cream text-emerald-700 border border-mb-line hover:bg-mb-cream cursor-pointer"
+                            >
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>{t.common.recordPayment}</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -458,6 +531,24 @@ export function BillsModule() {
               </button>
             </div>
           </form>
+        )}
+      </Modal>
+      {/* View Attached Receipt Photo Modal */}
+      <Modal
+        open={!!viewReceiptBill}
+        onClose={() => setViewReceiptBill(null)}
+        title={`${t.extras.viewReceipt} — ${viewReceiptBill?.bill_number || ""}`}
+        maxWidth="max-w-lg"
+      >
+        {viewReceiptBill?.receipt_filename && (
+          <div className="space-y-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/receipts/${viewReceiptBill.receipt_filename}`}
+              alt={viewReceiptBill.bill_number}
+              className="w-full rounded-xl border border-mb-line object-contain max-h-[65vh]"
+            />
+          </div>
         )}
       </Modal>
     </div>

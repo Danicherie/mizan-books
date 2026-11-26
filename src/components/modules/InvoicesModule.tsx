@@ -2,7 +2,7 @@
 
 import { localizeApiError } from "@/lib/i18n/errors";
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, Printer, CreditCard, Eye } from "lucide-react";
+import { Plus, Trash2, Printer, CreditCard, Eye, Send } from "lucide-react";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { getTodayIso } from "@/lib/calendar";
 import { useApp } from "../AppContext";
@@ -186,6 +186,30 @@ export function InvoicesModule() {
     void load();
   }
 
+  async function sendInvoiceReminder(inv: InvoiceRow) {
+    if (!activeCompany) return;
+    const due = Math.max(0, Number((inv.total - inv.amount_paid).toFixed(2)));
+    const msg = `${activeCompany.name}: ${inv.invoice_number} (${inv.customer_name}) — ${t.sales.balanceDue}: ${formatAmt(due, inv.currency_code)}, ${t.common.dueDate}: ${formatDt(inv.due_date)}`;
+    const res = await fetch("/api/alerts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "send_alert",
+        companyId: activeCompany.id,
+        channel: "TELEGRAM",
+        recipient: inv.customer_email || inv.customer_name,
+        entity_type: "INVOICE",
+        entity_id: inv.id,
+        message: msg,
+      }),
+    });
+    if (res.ok) {
+      showToast("success", `${t.extras.sendReminder}: ${inv.invoice_number}`);
+    } else {
+      showToast("error", t.common.error);
+    }
+  }
+
   const statusLabel = (s: string) => {
     const map: Record<string, string> = {
       PAID: t.common.paid,
@@ -285,17 +309,27 @@ export function InvoicesModule() {
                             <Eye className="w-4 h-4" />
                           </button>
                           {canWrite && due > 0.01 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPayInvoice(inv);
-                                setPayAmount(String(due));
-                              }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-mb-cream text-mb-cocoa border border-mb-line hover:bg-mb-cream cursor-pointer"
-                            >
-                              <CreditCard className="w-3.5 h-3.5" />
-                              <span>{t.common.recordPayment}</span>
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void sendInvoiceReminder(inv)}
+                                className="p-1.5 rounded-lg border border-mb-line bg-mb-cream text-mb-cocoa hover:bg-mb-cream cursor-pointer"
+                                title={t.extras.sendReminder}
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPayInvoice(inv);
+                                  setPayAmount(String(due));
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-mb-cream text-emerald-700 border border-mb-line hover:bg-mb-cream cursor-pointer"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>{t.common.recordPayment}</span>
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
