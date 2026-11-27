@@ -27,6 +27,7 @@ export const amPublic: Pick<Dictionary, "currencies" | "taxRegimes" | "errors" |
     emailExists: "በዚህ ኢሜይል መለያ አለ።",
     readOnly: "አይፈቀድም፦ ለንባብ ብቻ",
     adminRequired: "አይፈቀድም፦ የአስተዳዳሪ ሚና ያስፈልጋል",
+    booksRoleRequired: "አይፈቀድም፦ የባለቤት ወይም የሂሳብ ሹም ሚና ያስፈልጋል",
     noCompanyAccess: "አይፈቀድም፦ ወደዚህ ኩባንያ መዳረሻ የለዎትም",
     noCompany: "ለዚህ መለያ የተመደበ ኩባንያ የለም",
     forbidden: "አይፈቀድም",

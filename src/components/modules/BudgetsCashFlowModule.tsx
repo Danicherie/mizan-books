@@ -32,7 +32,7 @@ interface ForecastBucket {
 }
 
 export function BudgetsCashFlowModule() {
-  const { activeCompany, lang, t, formatAmt, canWrite, showToast } = useApp();
+  const { activeCompany, lang, t, formatAmt, canKeepBooks, showToast } = useApp();
   const [subTab, setSubTab] = useState<"budgets" | "cashflow">("budgets");
   const [periodMonth, setPeriodMonth] = useState(new Date().toISOString().slice(0, 7));
   const [rows, setRows] = useState<BudgetRow[]>([]);
@@ -103,7 +103,7 @@ export function BudgetsCashFlowModule() {
               onChange={(e) => setPeriodMonth(e.target.value)}
               className="px-3 py-2 rounded-lg border border-mb-line bg-mb-paper text-sm font-medium"
             />
-            {subTab === "budgets" && canWrite && (
+            {subTab === "budgets" && canKeepBooks && (
               <button
                 type="button"
                 onClick={() => void handleSaveBudgets()}
@@ -175,7 +175,7 @@ export function BudgetsCashFlowModule() {
                         <input
                           type="number"
                           step="100"
-                          disabled={!canWrite}
+                          disabled={!canKeepBooks}
                           value={edits[r.id] ?? r.budget_amount}
                           onChange={(e) => setEdits({ ...edits, [r.id]: e.target.value })}
                           className="w-32 px-2.5 py-1.5 rounded-lg border border-mb-line text-end tabular-nums text-sm disabled:bg-mb-beige"

@@ -48,6 +48,7 @@ interface AccountOpt {
 export function BillsModule() {
   const { activeCompany, lang, t, formatAmt, formatDt, canWrite, showToast } = useApp();
   const [bills, setBills] = useState<BillRow[]>([]);
+  const [aging, setAging] = useState({ current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 });
   const [vendors, setVendors] = useState<VendorOpt[]>([]);
   const [expenseAccounts, setExpenseAccounts] = useState<AccountOpt[]>([]);
   const [cashAccounts, setCashAccounts] = useState<AccountOpt[]>([]);
@@ -79,11 +80,15 @@ export function BillsModule() {
       fetch(`/api/vendors?companyId=${activeCompany.id}`, { cache: "no-store" }),
       fetch(`/api/accounts?companyId=${activeCompany.id}`, { cache: "no-store" }),
     ]);
-    const bData = (await bRes.json()) as { bills: BillRow[] };
+    const bData = (await bRes.json()) as {
+      bills: BillRow[];
+      aging?: { current: number; d1_30: number; d31_60: number; d61_90: number; d90: number };
+    };
     const vData = (await vRes.json()) as { vendors: VendorOpt[] };
     const aData = (await aRes.json()) as { accounts: AccountOpt[] };
 
     setBills(bData.bills || []);
+    if (bData.aging) setAging(bData.aging);
     setVendors(vData.vendors || []);
     const expAccts = (aData.accounts || []).filter((a) => a.type === "EXPENSE" || a.subtype === "INVENTORY" || a.subtype === "FIXED_ASSET");
     const banks = (aData.accounts || []).filter((a) => a.subtype === "CASH" || a.subtype === "BANK");
@@ -213,6 +218,24 @@ export function BillsModule() {
           )
         }
       />
+
+      <h2 className="text-sm font-bold text-mb-cocoa mb-2">{t.purchases.agedPayables}</h2>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+        {(
+          [
+            ["current", t.purchases.agingCurrent, aging.current],
+            ["d1_30", t.purchases.aging1to30, aging.d1_30],
+            ["d31_60", t.purchases.aging31to60, aging.d31_60],
+            ["d61_90", t.purchases.aging61to90, aging.d61_90],
+            ["d90", t.purchases.agingOver90, aging.d90],
+          ] as const
+        ).map(([key, label, amount]) => (
+          <Card key={key} className="p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-mb-ink/70">{label}</div>
+            <div className="mt-1 text-sm font-bold tabular-nums text-mb-cocoa">{formatAmt(amount)}</div>
+          </Card>
+        ))}
+      </div>
 
       {(overdueBills.length > 0 || dueSoonBills.length > 0) && (
         <div className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900">

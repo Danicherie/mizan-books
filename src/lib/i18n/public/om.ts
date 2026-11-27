@@ -27,6 +27,7 @@ export const omPublic: Pick<Dictionary, "currencies" | "taxRegimes" | "errors" |
     emailExists: "Herregni imeelii kanaan dursee jira.",
     readOnly: "Hin hayyamamu: dubbisuu qofa",
     adminRequired: "Hin hayyamamu: gaheen bulchaa barbaachisa",
+    booksRoleRequired: "Hin hayyamamu: gaheen abbaa qabeenyaa yookaan herreegaa barbaachisa",
     noCompanyAccess: "Hin hayyamamu: dhaabbata kanaaf hayyama hin qabdu",
     noCompany: "Herrega kanaaf dhaabbanni ramadame hin jiru",
     forbidden: "Hin hayyamamu",

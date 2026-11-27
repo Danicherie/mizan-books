@@ -81,7 +81,7 @@ interface TaxFilingDoc {
 }
 
 export function PayrollTaxModule() {
-  const { activeCompany, t, formatAmt, formatDt, canWrite, showToast } = useApp();
+  const { activeCompany, t, formatAmt, formatDt, canKeepBooks, showToast } = useApp();
   const [subTab, setSubTab] = useState<"employees" | "runs" | "tax" | "filings">("employees");
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
@@ -186,7 +186,7 @@ export function PayrollTaxModule() {
         title={t.payroll.title}
         subtitle={t.payroll.subtitle}
         actions={
-          canWrite && (
+          canKeepBooks && (
             <>
               <button
                 type="button"

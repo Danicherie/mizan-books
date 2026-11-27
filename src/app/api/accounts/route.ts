@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
-    const blocked = guardCompanyMutation(auth.user, companyId);
+    const blocked = guardCompanyMutation(auth.user, companyId, { booksOnly: true });
     if (blocked) return blocked;
     const accountTypes = new Set(["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]);
     if (!body.code?.trim() || body.code.trim().length > 32 || !body.name?.trim() || body.name.trim().length > 200 || !accountTypes.has(body.type)) {

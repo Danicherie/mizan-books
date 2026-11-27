@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Finance suite on the current books
+
+- Bank reconciliation, budgets and cash flow, point of sale, receipt photos, payslips, tax filings, and customer alerts now sit on the same books as the trial lock, whole-cent money, and the cosy amber and cream screens.
+- New money columns are integer cents. New saves check the browser origin, the company role, and the trial or pause lock.
+- Online subscription checkout and the invented prices are gone. A test payment can be marked complete only when `ENABLE_SANDBOX_PAYMENTS=true`. The payments tab stays hidden until that switch is on.
+- Receipt photos are checked as real JPEG, PNG, or WebP files. The daily backup copies `data/receipts` next to the database snapshot.
+- Optional settings, left empty unless you use them: `ENABLE_SANDBOX_PAYMENTS`, `CHAPA_SECRET_KEY`, `STRIPE_SECRET_KEY`, `APP_URL`, `TELEGRAM_BOT_TOKEN`, `SMS_WEBHOOK_URL`, `SMS_API_KEY`.
+
+### Small-business books
+
+- Supplier bills already on file now show aged payables, and the dashboard lists bills due in the next seven days.
+- Receiving stock at a new cost updates the moving average cost in cents and posts that receipt to the ledger.
+- Exchange rates can be saved for a chosen date. A foreign invoice or bill is converted at the rate on its date, and the payment posts the realised gain or loss against account 4200. Pound sterling is included with the other currencies.
+- Company roles are owner, accountant, staff, and viewer. Staff can sell, buy, and count stock. The ledger, payroll, budgets, and the audit log stay with the owner and the accountant. An owner can invite someone who already has a login.
+
 ### Languages and legal pages
 
 - Amharic, Afaan Oromo, and Somali now cover the marketing site, the About, Contact, Privacy, and Terms pages, and the messages the app shows when a save or sign-up is rejected. English and Arabic use the same finished pages.

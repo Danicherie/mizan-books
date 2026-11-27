@@ -190,7 +190,7 @@ export async function POST(request: Request) {
     const scoped = resolveScopedCompanyId(auth.user.id, body.companyId);
     if ("error" in scoped) return scoped.error;
     const companyId = scoped.companyId;
-    const blocked = guardCompanyMutation(auth.user, companyId);
+    const blocked = guardCompanyMutation(auth.user, companyId, { booksOnly: true });
     if (blocked) return blocked;
     const db = getDb();
 

@@ -226,6 +226,17 @@ export const STANDARD_COA: DefaultAccountDef[] = [
     subtype: "SERVICE_REVENUE",
     normal_balance: "CREDIT",
   },
+  {
+    code: "4200",
+    name: "Foreign Exchange Gain / Loss",
+    name_am: "የውጭ ምንዛሬ ትርፍ / ኪሳራ",
+    name_om: "Bu'aa / Kasaaraa Sarjaa Ala",
+    name_so: "Faa'iido / Khasaaro Sarifka Dibadda",
+    name_ar: "أرباح / خسائر صرف العملات",
+    type: "REVENUE",
+    subtype: "FX",
+    normal_balance: "CREDIT",
+  },
   // Expenses
   {
     code: "5000",
@@ -328,16 +339,22 @@ export function seedCompanyExchangeRates(db: DatabaseSync, companyId: number, ba
     SAR: 3.75,
     AED: 3.6725,
     EUR: 0.92,
+    GBP: 0.79,
   };
   const basePerUsd = ratesToUsd[baseCurrency] ?? 1;
   const stmt = db.prepare(`
     INSERT INTO exchange_rates (company_id, currency_code, rate_to_base, updated_at)
     VALUES (?, ?, ?, datetime('now'))
   `);
+  const history = db.prepare(`
+    INSERT INTO exchange_rate_history (company_id, currency_code, rate_date, rate_to_base)
+    VALUES (?, ?, date('now'), ?)
+  `);
   for (const [code, perUsd] of Object.entries(ratesToUsd)) {
     // 1 unit of `code` in `baseCurrency` = basePerUsd / perUsd
     const rateToBase = code === baseCurrency ? 1 : Number((basePerUsd / perUsd).toFixed(4));
     stmt.run(companyId, code, rateToBase);
+    history.run(companyId, code, rateToBase);
   }
 }
 
@@ -387,6 +404,16 @@ function initSchema(db: DatabaseSync) {
       rate_to_base REAL NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(company_id, currency_code),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS exchange_rate_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      currency_code TEXT NOT NULL,
+      rate_date TEXT NOT NULL,
+      rate_to_base REAL NOT NULL,
+      UNIQUE(company_id, currency_code, rate_date),
       FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
     );
 
@@ -1425,6 +1452,66 @@ export function resetDbForTests(): void {
   }
 }
 
+const SAMPLE_RATES_TO_USD: Record<string, number> = {
+  USD: 1,
+  ETB: 124.5,
+  SOS: 571.0,
+  KES: 129.2,
+  SAR: 3.75,
+  AED: 3.6725,
+  EUR: 0.92,
+  GBP: 0.79,
+};
+
+/** Add the FX account, pound sterling, and a dated copy of each saved rate on databases that already exist. */
+function ensureFinanceExtras(db: DatabaseSync) {
+  const companyCols = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
+  if (!companyCols.some((col) => col.name === "base_currency")) return;
+  const accountsReady = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'accounts'").get();
+  if (!accountsReady) return;
+  const fx = STANDARD_COA.find((account) => account.code === "4200");
+  const companies = db.prepare("SELECT id, base_currency FROM companies").all() as Array<{ id: number; base_currency: string }>;
+  const hasAccount = db.prepare("SELECT 1 AS ok FROM accounts WHERE company_id = ? AND code = ?");
+  const insertAccount = db.prepare(`
+    INSERT INTO accounts (company_id, code, name, name_am, name_om, name_so, name_ar, type, subtype, normal_balance, is_system, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+  `);
+  const hasRate = db.prepare("SELECT 1 AS ok FROM exchange_rates WHERE company_id = ? AND currency_code = ?");
+  const insertRate = db.prepare(`
+    INSERT INTO exchange_rates (company_id, currency_code, rate_to_base, updated_at)
+    VALUES (?, ?, ?, datetime('now'))
+  `);
+  for (const company of companies) {
+    if (fx && !hasAccount.get(company.id, fx.code)) {
+      insertAccount.run(
+        company.id,
+        fx.code,
+        fx.name,
+        fx.name_am,
+        fx.name_om,
+        fx.name_so,
+        fx.name_ar,
+        fx.type,
+        fx.subtype,
+        fx.normal_balance
+      );
+    }
+    const basePerUsd = SAMPLE_RATES_TO_USD[company.base_currency] ?? 1;
+    for (const [code, perUsd] of Object.entries(SAMPLE_RATES_TO_USD)) {
+      if (hasRate.get(company.id, code)) continue;
+      const rateToBase = code === company.base_currency ? 1 : Number((basePerUsd / perUsd).toFixed(4));
+      insertRate.run(company.id, code, rateToBase);
+    }
+  }
+  db.exec(`
+    INSERT OR IGNORE INTO exchange_rate_history (company_id, currency_code, rate_date, rate_to_base)
+    SELECT company_id, currency_code,
+      CASE WHEN length(updated_at) >= 10 THEN substr(updated_at, 1, 10) ELSE date('now') END,
+      rate_to_base
+    FROM exchange_rates
+  `);
+}
+
 export function getDb(): DatabaseSync {
   if (_db) return _db;
   const dataDir = process.env.DATA_DIR || path.join(process.cwd(), "data");
@@ -1437,6 +1524,7 @@ export function getDb(): DatabaseSync {
     initSchema(db);
     migrateMoneyToMinorUnits(db);
     bootstrapDatabase(db);
+    ensureFinanceExtras(db);
   } catch (err) {
     db.close();
     throw err;

@@ -40,8 +40,18 @@ export function backupSqliteDatabase(options = {}) {
     db.close();
   }
   fs.renameSync(partialPath, backupPath);
+  const receiptsPath = copyReceiptsSnapshot(dataDir, resolvedBackup, stamp);
   const removed = pruneOldBackups(resolvedBackup, retentionDays, now);
-  return { backupPath, sourcePath, removed };
+  return { backupPath, sourcePath, receiptsPath, removed };
+}
+
+/** Copy data/receipts next to the database snapshot. Missing folders are skipped. */
+export function copyReceiptsSnapshot(dataDir, backupDir, stamp) {
+  const source = path.resolve(dataDir, "receipts");
+  if (!fs.existsSync(source)) return null;
+  const dest = path.join(path.resolve(backupDir), `receipts-${stamp}`);
+  fs.cpSync(source, dest, { recursive: true, dereference: false });
+  return dest;
 }
 
 export function pruneOldBackups(backupDir, retentionDays, now = new Date()) {
@@ -49,11 +59,13 @@ export function pruneOldBackups(backupDir, retentionDays, now = new Date()) {
   const maxAgeMs = Number(retentionDays) * 24 * 60 * 60 * 1000;
   const removed = [];
   for (const name of fs.readdirSync(backupDir)) {
-    if (!/^mizan-.+\.db$/.test(name)) continue;
+    const isDb = /^mizan-.+\.db$/.test(name);
+    const isReceipts = /^receipts-.+$/.test(name);
+    if (!isDb && !isReceipts) continue;
     const full = path.join(backupDir, name);
     const age = now.getTime() - fs.statSync(full).mtimeMs;
     if (age > maxAgeMs) {
-      fs.rmSync(full);
+      fs.rmSync(full, { recursive: true, force: true });
       removed.push(full);
     }
   }

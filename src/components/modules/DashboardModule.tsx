@@ -58,6 +58,15 @@ interface DashboardData {
     reorder_level: number;
     unit: string;
   }>;
+  dueSoonBills: Array<{
+    id: number;
+    bill_number: string;
+    vendor_name: string;
+    due_date: string;
+    currency_code: string;
+    total: number;
+    amount_paid: number;
+  }>;
 }
 
 export function DashboardModule() {
@@ -300,6 +309,47 @@ export function DashboardModule() {
           </Card>
         </div>
       </div>
+
+      <Card className="overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-mb-line flex items-center justify-between">
+          <h2 className="text-sm font-bold text-mb-cocoa">{t.dashboard.dueSoonBills}</h2>
+          <button
+            type="button"
+            onClick={() => setActiveTab("bills")}
+            className="text-xs font-semibold text-mb-cocoa hover:underline cursor-pointer"
+          >
+            {t.common.view}
+          </button>
+        </div>
+        {(data.dueSoonBills ?? []).length === 0 ? (
+          <div className="px-5 py-6 text-sm text-mb-ink/70">{t.dashboard.noBillsDue}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-mb-beige text-xs text-mb-ink uppercase">
+                <tr>
+                  <th className="px-4 py-2.5 text-start">{t.purchases.billNumber}</th>
+                  <th className="px-4 py-2.5 text-start">{t.purchases.vendor}</th>
+                  <th className="px-4 py-2.5 text-start">{t.common.dueDate}</th>
+                  <th className="px-4 py-2.5 text-end">{t.purchases.balanceDue}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-mb-line/70">
+                {data.dueSoonBills.map((bill) => (
+                  <tr key={bill.id} className="hover:bg-mb-cream/70">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-mb-cocoa">{bill.bill_number}</td>
+                    <td className="px-4 py-3 text-mb-ink">{bill.vendor_name}</td>
+                    <td className="px-4 py-3 text-xs text-mb-ink whitespace-nowrap">{formatDt(bill.due_date)}</td>
+                    <td className="px-4 py-3 text-end font-semibold tabular-nums">
+                      {formatAmt(bill.total - bill.amount_paid, bill.currency_code)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       {/* Bottom Split: Open Invoices + Recent GL */}
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">

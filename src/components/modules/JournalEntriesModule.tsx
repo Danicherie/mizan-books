@@ -58,7 +58,7 @@ interface JournalEntry {
 }
 
 export function JournalEntriesModule() {
-  const { activeCompany, lang, t, formatAmt, formatDt, canWrite, showToast } = useApp();
+  const { activeCompany, lang, t, formatAmt, formatDt, canKeepBooks, showToast } = useApp();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [accounts, setAccounts] = useState<AccountOpt[]>([]);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
@@ -164,7 +164,7 @@ export function JournalEntriesModule() {
         title={t.journal.title}
         subtitle={t.journal.subtitle}
         actions={
-          canWrite && (
+          canKeepBooks && (
             <button
               type="button"
               onClick={() => setOpenModal(true)}

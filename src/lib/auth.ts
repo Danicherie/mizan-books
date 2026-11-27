@@ -17,7 +17,7 @@ export function isDemoLoginEnabled(): boolean {
   return process.env.ENABLE_DEMO_LOGIN === "true";
 }
 
-export type UserRole = "admin" | "accountant" | "viewer";
+export type UserRole = "admin" | "accountant" | "staff" | "viewer";
 
 export interface SessionUser {
   id: number;
@@ -132,7 +132,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 }
 
 export function canWrite(role: UserRole): boolean {
-  return role === "admin" || role === "accountant";
+  return role === "admin" || role === "accountant" || role === "staff";
 }
 
 export function isAdmin(role: UserRole): boolean {

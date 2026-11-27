@@ -144,12 +144,15 @@ export function AppShell() {
     },
   ];
 
+  const roleName = activeCompany?.membership_role || user?.role;
   const roleLabel =
-    user?.role === "admin"
+    roleName === "admin"
       ? t.topbar.roleAdmin
-      : user?.role === "accountant"
-      ? t.topbar.roleAccountant
-      : t.topbar.roleViewer;
+      : roleName === "accountant"
+        ? t.topbar.roleAccountant
+        : roleName === "staff"
+          ? t.topbar.roleStaff
+          : t.topbar.roleViewer;
 
   const sidebarContent = (
     <div id="app-sidebar" className="flex flex-col h-full bg-mb-paper text-mb-cocoa w-64 shrink-0 select-none border-e border-mb-line shadow-[8px_0_30px_rgba(74,46,31,0.04)]">

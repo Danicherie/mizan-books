@@ -40,6 +40,7 @@ export function InventoryModule() {
 
   const [delta, setDelta] = useState("0");
   const [reason, setReason] = useState("");
+  const [receiptCost, setReceiptCost] = useState("");
 
   const load = useCallback(async () => {
     if (!activeCompany) return;
@@ -91,7 +92,12 @@ export function InventoryModule() {
     const res = await fetch("/api/inventory", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: adjustItem.id, delta: parseFloat(delta), reason }),
+      body: JSON.stringify({
+        id: adjustItem.id,
+        delta: parseFloat(delta),
+        reason,
+        ...(receiptCost.trim() ? { unit_cost: parseFloat(receiptCost) } : {}),
+      }),
     });
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
@@ -138,7 +144,7 @@ export function InventoryModule() {
                 <th className="px-4 py-3 text-start">{t.inventory.sku}</th>
                 <th className="px-4 py-3 text-start">{t.common.name}</th>
                 <th className="px-4 py-3 text-start">{t.inventory.itemType}</th>
-                <th className="px-4 py-3 text-end">{t.common.unitCost}</th>
+                <th className="px-4 py-3 text-end">{t.inventory.averageCost}</th>
                 <th className="px-4 py-3 text-end">{t.common.unitPrice}</th>
                 <th className="px-4 py-3 text-end">{t.inventory.qtyOnHand}</th>
                 <th className="px-4 py-3 text-center">{t.common.status}</th>
@@ -270,6 +276,10 @@ export function InventoryModule() {
             <div>
               <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.adjustmentQty}</label>
               <input type="number" step="1" required value={delta} onChange={(e) => setDelta(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.receiptCost}</label>
+              <input type="number" step="0.01" min="0" value={receiptCost} onChange={(e) => setReceiptCost(e.target.value)} placeholder={String(adjustItem.unit_cost)} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-mb-ink mb-1">{t.inventory.adjustmentReason}</label>

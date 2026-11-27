@@ -27,6 +27,7 @@ export const arPublic: Pick<Dictionary, "currencies" | "taxRegimes" | "errors" |
     emailExists: "يوجد حساب بهذا البريد الإلكتروني.",
     readOnly: "غير مسموح: صلاحية القراءة فقط",
     adminRequired: "غير مسموح: يلزم دور المدير",
+    booksRoleRequired: "غير مسموح: يلزم دور المالك أو المحاسب",
     noCompanyAccess: "غير مسموح: ليس لديك وصول إلى هذه الشركة",
     noCompany: "لا توجد شركة مرتبطة بهذا الحساب",
     forbidden: "غير مسموح",

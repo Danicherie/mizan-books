@@ -5,6 +5,7 @@ import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, reso
 import { clientErrorResponse } from "@/lib/http";
 import { assertMutationOrigin } from "@/lib/origin";
 import { getTodayIso } from "@/lib/calendar";
+import { weightedAverageMinor } from "@/lib/inventory-cost";
 import { fromMinor, INVENTORY_MONEY_FIELDS, minorFromSql, mulMinor, toMinor, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
@@ -95,6 +96,7 @@ export async function PATCH(request: Request) {
       id: number;
       delta: number;
       reason?: string;
+      unit_cost?: number | string;
     };
     const db = getDb();
     const item = db.prepare("SELECT * FROM inventory_items WHERE id = ?").get(body.id) as {
@@ -113,11 +115,23 @@ export async function PATCH(request: Request) {
     if (blocked) return blocked;
 
     const delta = Number(body.delta);
-    if (!delta) return NextResponse.json({ error: "Non-zero adjustment required" }, { status: 400 });
-    const newQty = Number((item.quantity_on_hand + delta).toFixed(2));
-    db.prepare("UPDATE inventory_items SET quantity_on_hand = ? WHERE id = ?").run(newQty, item.id);
-
-    const valueDelta = mulMinor(minorFromSql(item.unit_cost), Math.abs(delta));
+    if (!Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1_000_000) {
+      return NextResponse.json({ error: "Non-zero adjustment required" }, { status: 400 });
+    }
+    const newQty = Number((item.quantity_on_hand + delta).toFixed(4));
+    if (newQty < -0.0001) {
+      return NextResponse.json({ error: "Stock cannot go below zero." }, { status: 400 });
+    }
+    const oldCost = minorFromSql(item.unit_cost);
+    let nextCost = oldCost;
+    let valueDelta = mulMinor(oldCost, Math.abs(delta));
+    if (delta > 0 && body.unit_cost != null && String(body.unit_cost).trim() !== "") {
+      const incoming = toMinor(body.unit_cost);
+      if (incoming < 0) return NextResponse.json({ error: "Cost cannot be negative." }, { status: 400 });
+      nextCost = weightedAverageMinor(item.quantity_on_hand, oldCost, delta, incoming);
+      valueDelta = mulMinor(incoming, delta);
+    }
+    db.prepare("UPDATE inventory_items SET quantity_on_hand = ?, unit_cost = ? WHERE id = ?").run(newQty, nextCost, item.id);
     if (valueDelta > 0) {
       const company = getCompanyRecord(item.company_id);
       const invAcct = getAccountByCode(item.company_id, "1200").id;

@@ -31,7 +31,7 @@ export interface UserSession {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "accountant" | "viewer";
+  role: "admin" | "accountant" | "staff" | "viewer";
   preferred_lang: string;
   preferred_calendar: string;
 }
@@ -72,6 +72,7 @@ interface AppContextValue {
   formatAmt: (val: number | null | undefined, currency?: string, compact?: boolean) => string;
   formatDt: (iso: string | null | undefined) => string;
   canWrite: boolean;
+  canKeepBooks: boolean;
   isAdmin: boolean;
   toast: { type: "success" | "error"; message: string } | null;
   showToast: (type: "success" | "error", message: string) => void;
@@ -208,7 +209,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     : null;
   const trialDaysLeft = subscription?.status === "trial" ? subscription.daysLeft : null;
   const membershipRole = activeCompany?.membership_role || user?.role;
-  const roleCanWrite = membershipRole === "admin" || membershipRole === "accountant";
+  const roleCanWrite = membershipRole === "admin" || membershipRole === "accountant" || membershipRole === "staff";
+  const roleKeepsBooks = membershipRole === "admin" || membershipRole === "accountant";
 
   const formatAmt = useCallback(
     (val: number | null | undefined, currency?: string, compact = false) =>
@@ -242,6 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         formatAmt,
         formatDt,
         canWrite: roleCanWrite && (subscription?.canMutate ?? false),
+        canKeepBooks: roleKeepsBooks && (subscription?.canMutate ?? false),
         isAdmin: membershipRole === "admin",
         toast,
         showToast,

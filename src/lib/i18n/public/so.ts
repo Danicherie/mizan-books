@@ -27,6 +27,7 @@ export const soPublic: Pick<Dictionary, "currencies" | "taxRegimes" | "errors" |
     emailExists: "Akoon leh iimaylkan ayaa horay u jiray.",
     readOnly: "Lama oggola: akhris kaliya",
     adminRequired: "Lama oggola: doorka maamulaha ayaa loo baahan yahay",
+    booksRoleRequired: "Lama oggola: doorka milkiilaha ama xisaabiyaha ayaa loo baahan yahay",
     noCompanyAccess: "Lama oggola: ma lihid gelitaan shirkaddan",
     noCompany: "Shirkad loo qoondeeyay akoonkan ma jirto",
     forbidden: "Lama oggola",

@@ -6,7 +6,8 @@ import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, reso
 import { getTodayIso } from "@/lib/calendar";
 import { clientErrorResponse } from "@/lib/http";
 import { assertMutationOrigin } from "@/lib/origin";
-import { fromMinor, INVOICE_MONEY_FIELDS, minorFromSql, mulMinor, withMajorMoney } from "@/lib/money";
+import { customerReceiptLines, rateToBaseOn } from "@/lib/fx";
+import { fromMinor, INVOICE_MONEY_FIELDS, minorFromSql, withMajorMoney } from "@/lib/money";
 
 /**
  * Sandbox completion is a developer test switch. It must stay off in production,
@@ -232,22 +233,29 @@ export async function POST(request: Request) {
       const paidMinor = minorFromSql(inv.amount_paid);
       const payMinor = Math.min(minorFromSql(tx.amount), totalMinor - paidMinor);
       if (payMinor > 0) {
-        const basePay = mulMinor(payMinor, inv.exchange_rate);
+        const payDate = getTodayIso();
+        const payRate = rateToBaseOn(companyId, tx.currency_code, company.base_currency, payDate);
         const bankAcct = getAccountByCode(companyId, "1010").id;
         const arAcct = getAccountByCode(companyId, "1100").id;
+        const fxAcct = getAccountByCode(companyId, "4200").id;
         postJournalEntry({
           company_id: companyId,
-          entry_date: getTodayIso(),
+          entry_date: payDate,
           reference: tx.tx_ref,
           description: `${tx.provider} test payment for ${inv.invoice_number}`,
           source_type: "INVOICE_PAYMENT",
           source_id: inv.id,
           created_by: auth.user.id,
           currency_code: company.base_currency,
-          lines: [
-            { account_id: bankAcct, description: `${tx.provider} Settlement ${inv.invoice_number}`, debit: fromMinor(basePay), credit: 0 },
-            { account_id: arAcct, description: `Clear AR ${inv.invoice_number}`, debit: 0, credit: fromMinor(basePay) },
-          ],
+          lines: customerReceiptLines({
+            foreignMinor: payMinor,
+            bookedRate: inv.exchange_rate,
+            payRate,
+            bankAccountId: bankAcct,
+            arAccountId: arAcct,
+            fxAccountId: fxAcct,
+            description: `${tx.provider} settlement ${inv.invoice_number}`,
+          }),
         });
         const newPaid = paidMinor + payMinor;
         db.prepare("UPDATE invoices SET amount_paid = ?, status = ? WHERE id = ?").run(

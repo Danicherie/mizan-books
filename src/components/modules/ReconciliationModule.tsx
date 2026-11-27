@@ -39,7 +39,7 @@ interface ReconData {
 }
 
 export function ReconciliationModule() {
-  const { activeCompany, t, formatAmt, formatDt, canWrite, showToast } = useApp();
+  const { activeCompany, t, formatAmt, formatDt, canKeepBooks, showToast } = useApp();
   const [data, setData] = useState<ReconData | null>(null);
   const [accountId, setAccountId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -99,7 +99,7 @@ export function ReconciliationModule() {
         title={t.extras.reconTitle}
         subtitle={t.extras.reconSubtitle}
         actions={
-          canWrite && (
+          canKeepBooks && (
             <>
               <button
                 type="button"
@@ -212,7 +212,7 @@ export function ReconciliationModule() {
                             />
                           </td>
                           <td className="px-4 py-3 text-end whitespace-nowrap">
-                            {canWrite && st.status !== "MATCHED" && (
+                            {canKeepBooks && st.status !== "MATCHED" && (
                               <div className="inline-flex items-center gap-1.5">
                                 {unmatchedGl.length > 0 && (
                                   <select

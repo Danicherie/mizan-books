@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { canWrite, getCurrentUser, isAdmin, type SessionUser } from "./auth";
 import { getDb } from "./db";
 import { evaluateSubscription } from "./subscription";
+import { canKeepBooks, normalizeCompanyRole } from "./team";
 
 export async function requireAuth(): Promise<{ user: SessionUser } | { error: NextResponse }> {
   const user = await getCurrentUser();
@@ -12,11 +13,10 @@ export async function requireAuth(): Promise<{ user: SessionUser } | { error: Ne
 }
 
 export async function requireWrite(): Promise<{ user: SessionUser } | { error: NextResponse }> {
+  // The company membership is the role check. A person can be a viewer on one
+  // company and staff on another, so the global user role is not the lock.
   const auth = await requireAuth();
   if ("error" in auth) return auth;
-  if (!canWrite(auth.user.role)) {
-    return { error: NextResponse.json({ error: "Forbidden: Read-only access" }, { status: 403 }) };
-  }
   return auth;
 }
 
@@ -134,7 +134,7 @@ function subscriptionBlocked(company: {
 export function guardCompanyMutation(
   user: SessionUser,
   companyId: number,
-  options?: { adminOnly?: boolean }
+  options?: { adminOnly?: boolean; booksOnly?: boolean }
 ): NextResponse | null {
   const db = getDb();
   const membership = db
@@ -143,11 +143,16 @@ export function guardCompanyMutation(
   if (!membership) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const role = normalizeCompanyRole(membership.role);
   if (options?.adminOnly) {
-    if (membership.role !== "admin") {
+    if (role !== "admin") {
       return NextResponse.json({ error: "Forbidden: Admin role required" }, { status: 403 });
     }
-  } else if (!canWrite(membership.role as SessionUser["role"])) {
+  } else if (options?.booksOnly) {
+    if (!canKeepBooks(role)) {
+      return NextResponse.json({ error: "Forbidden: Owner or accountant role required" }, { status: 403 });
+    }
+  } else if (!role || !canWrite(role)) {
     return NextResponse.json({ error: "Forbidden: Read-only access" }, { status: 403 });
   }
   return subscriptionBlocked(getCompanyRecord(companyId));

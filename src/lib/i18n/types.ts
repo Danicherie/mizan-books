@@ -52,6 +52,7 @@ export interface Dictionary {
     newCompany: string;
     roleAdmin: string;
     roleAccountant: string;
+    roleStaff: string;
     roleViewer: string;
     readOnlyBadge: string;
   };
@@ -189,6 +190,8 @@ export interface Dictionary {
     newJournalEntry: string;
     runPayroll: string;
     overdueInvoices: string;
+    dueSoonBills: string;
+    noBillsDue: string;
     inventoryAlerts: string;
     allHealthy: string;
     month: string;
@@ -270,6 +273,12 @@ export interface Dictionary {
     expenseAccount: string;
     amountPaid: string;
     balanceDue: string;
+    agedPayables: string;
+    agingCurrent: string;
+    aging1to30: string;
+    aging31to60: string;
+    aging61to90: string;
+    agingOver90: string;
   };
   inventory: {
     title: string;
@@ -289,6 +298,8 @@ export interface Dictionary {
     adjustStock: string;
     adjustmentQty: string;
     adjustmentReason: string;
+    averageCost: string;
+    receiptCost: string;
   };
   payroll: {
     title: string;
@@ -363,6 +374,8 @@ export interface Dictionary {
     role: string;
     password: string;
     auditLogTab: string;
+    rateDate: string;
+    inviteHint: string;
   };
   extras: {
     payslip: string;
@@ -526,6 +539,7 @@ export interface ApiErrorCopy {
   emailExists: string;
   readOnly: string;
   adminRequired: string;
+  booksRoleRequired: string;
   noCompanyAccess: string;
   noCompany: string;
   forbidden: string;
