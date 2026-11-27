@@ -424,6 +424,8 @@ export const so: Dictionary = {
     telegramChatId: "Telegram Chat ID",
     smsPhone: "Lambarka Telefoonka (SMS)",
     sendTestAlert: "Dir Ogeysiis",
+    channel: "Kanaalka",
+    alertPlaceholder: "Xusuusin: Waqtiga bixinta qaansheegga waa dhacay.",
     sentAlertsLog: "Diiwaanka Ogeysiisyada La Diray",
   },
 };

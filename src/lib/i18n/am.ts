@@ -424,6 +424,8 @@ export const am: Dictionary = {
     telegramChatId: "የTelegram Chat ID",
     smsPhone: "የተቀባይ ስልክ (SMS)",
     sendTestAlert: "ማሳወቂያ ላክ",
+    channel: "ቻናል",
+    alertPlaceholder: "ማስታወሻ፦ የደረሰኝ ክፍያ ጊዜው ደርሷል።",
     sentAlertsLog: "የተላኩ ማሳወቂያዎች መዝገብ",
   },
 };

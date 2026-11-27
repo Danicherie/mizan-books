@@ -424,6 +424,8 @@ export const en: Dictionary = {
     telegramChatId: "Telegram Chat / Channel ID",
     smsPhone: "Recipient Phone (SMS)",
     sendTestAlert: "Send Alert",
+    channel: "Channel",
+    alertPlaceholder: "Reminder: Your invoice is due.",
     sentAlertsLog: "Notification & Reminder Log",
   },
 };

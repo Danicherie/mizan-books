@@ -424,6 +424,8 @@ export const ar: Dictionary = {
     telegramChatId: "معرّف محادثة Telegram",
     smsPhone: "رقم الهاتف (SMS)",
     sendTestAlert: "إرسال تنبيه",
+    channel: "القناة",
+    alertPlaceholder: "تذكير: فاتورة مستحقة الدفع.",
     sentAlertsLog: "سجل الإشعارات والتذكيرات",
   },
 };

@@ -408,7 +408,7 @@ export function PaymentsAlertsModule() {
               <form onSubmit={sendAlert} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-mb-ink mb-1">Channel</label>
+                    <label className="block text-xs font-semibold text-mb-ink mb-1">{t.extras.channel}</label>
                     <select
                       value={channel}
                       onChange={(e) => setChannel(e.target.value as "TELEGRAM" | "SMS")}
@@ -438,7 +438,7 @@ export function PaymentsAlertsModule() {
                     rows={3}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Reminder: Your invoice is due. Pay online via Chapa or Bank Transfer."
+                    placeholder={t.extras.alertPlaceholder}
                     className="w-full px-3 py-2 rounded-lg border border-mb-line text-sm"
                   />
                 </div>

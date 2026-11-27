@@ -438,6 +438,8 @@ export interface Dictionary {
     telegramChatId: string;
     smsPhone: string;
     sendTestAlert: string;
+    channel: string;
+    alertPlaceholder: string;
     sentAlertsLog: string;
   };
   currencies: {
