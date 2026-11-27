@@ -13,6 +13,7 @@ export const SUPPORTED_CURRENCIES: CurrencyInfo[] = [
   { code: "SAR", symbol: "﷼", name: "Saudi Riyal", decimals: 2 },
   { code: "AED", symbol: "د.إ", name: "UAE Dirham", decimals: 2 },
   { code: "EUR", symbol: "€", name: "Euro", decimals: 2 },
+  { code: "GBP", symbol: "£", name: "British Pound", decimals: 2 },
 ];
 
 export const CURRENCY_MAP: Record<string, CurrencyInfo> = Object.fromEntries(

@@ -27,6 +27,7 @@ export const enPublic: Pick<Dictionary, "currencies" | "taxRegimes" | "errors" |
     emailExists: "An account with this email already exists.",
     readOnly: "Forbidden: Read-only access",
     adminRequired: "Forbidden: Admin role required",
+    booksRoleRequired: "Forbidden: Owner or accountant role required",
     noCompanyAccess: "Forbidden: You do not have access to this company",
     noCompany: "No company assigned to this account",
     forbidden: "Forbidden",

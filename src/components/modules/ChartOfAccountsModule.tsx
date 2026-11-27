@@ -24,7 +24,7 @@ interface AccountRow {
 }
 
 export function ChartOfAccountsModule() {
-  const { activeCompany, lang, t, formatAmt, canWrite, showToast } = useApp();
+  const { activeCompany, lang, t, formatAmt, canKeepBooks, showToast } = useApp();
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -116,7 +116,7 @@ export function ChartOfAccountsModule() {
                 )
               }
             />
-            {canWrite && (
+            {canKeepBooks && (
               <button
                 type="button"
                 onClick={() => setOpenAdd(true)}

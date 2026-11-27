@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getDb, logAudit } from "@/lib/db";
 import { TAX_REGIMES } from "@/lib/currency";
-import { hashPassword } from "@/lib/auth";
-import { getUserCompanies, guardCompanyMutation, requireAdmin, requireAuth, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { getUserCompanies, guardCompanyMutation, requireAuth, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { recordExchangeRate } from "@/lib/fx";
 import { clientErrorResponse } from "@/lib/http";
+import { getTodayIso } from "@/lib/calendar";
 import { assertMutationOrigin } from "@/lib/origin";
-import { cleanEmail, cleanText, userPasswordProblem } from "@/lib/passwords";
+import { addCompanyMember, canKeepBooks } from "@/lib/team";
 
 export async function GET(request: Request) {
   const auth = await requireAuth();
@@ -29,16 +30,21 @@ export async function GET(request: Request) {
       ORDER BY u.id ASC
     `)
     .all(companyId);
-  const auditLogs = db
-    .prepare(`
-      SELECT al.*, u.name AS user_name
-      FROM audit_logs al
-      LEFT JOIN users u ON u.id = al.user_id
-      WHERE al.company_id = ?
-      ORDER BY al.id DESC
-      LIMIT 50
-    `)
-    .all(companyId);
+  const membership = db
+    .prepare("SELECT role FROM company_users WHERE user_id = ? AND company_id = ?")
+    .get(auth.user.id, companyId) as { role: string } | undefined;
+  const auditLogs = canKeepBooks(membership?.role)
+    ? db
+        .prepare(
+          `SELECT al.*, u.name AS user_name
+           FROM audit_logs al
+           LEFT JOIN users u ON u.id = al.user_id
+           WHERE al.company_id = ?
+           ORDER BY al.id DESC
+           LIMIT 50`
+        )
+        .all(companyId)
+    : [];
 
   return NextResponse.json({ companies, exchangeRates, users, auditLogs });
 }
@@ -46,7 +52,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const originBlock = assertMutationOrigin(request);
   if (originBlock) return originBlock;
-  const auth = await requireAdmin();
+  const auth = await requireAuth();
   if ("error" in auth) return auth.error;
 
   try {
@@ -55,10 +61,11 @@ export async function POST(request: Request) {
       companyId: number;
       currency_code?: string;
       rate_to_base?: number;
+      rate_date?: string;
       name?: string;
       email?: string;
       password?: string;
-      role?: "admin" | "accountant" | "viewer";
+      role?: "admin" | "accountant" | "staff" | "viewer" | "owner";
       default_vat_rate?: number;
       default_wht_rate?: number;
       tax_regime?: string;
@@ -72,44 +79,27 @@ export async function POST(request: Request) {
     const db = getDb();
 
     if (body.action === "update_rate") {
-      const rate = Number(body.rate_to_base);
       const code = (body.currency_code ?? "").trim().toUpperCase();
-      if (!/^[A-Z]{3}$/.test(code) || !Number.isFinite(rate) || rate <= 0 || rate > 1_000_000) {
-        return NextResponse.json({ error: "Valid currency and positive rate required" }, { status: 400 });
+      const company = db.prepare("SELECT base_currency FROM companies WHERE id = ?").get(companyId) as { base_currency: string };
+      if (code === company.base_currency) {
+        return NextResponse.json({ error: "The base currency rate stays at 1." }, { status: 400 });
       }
-      db.prepare(`
-        INSERT INTO exchange_rates (company_id, currency_code, rate_to_base, updated_at)
-        VALUES (?, ?, ?, datetime('now'))
-        ON CONFLICT(company_id, currency_code) DO UPDATE SET rate_to_base = excluded.rate_to_base, updated_at = datetime('now')
-      `).run(companyId, code, rate);
-      logAudit(companyId, auth.user.id, "UPDATE_FX_RATE", "EXCHANGE_RATE", null, `Updated ${code} rate to ${rate}`);
+      recordExchangeRate(companyId, code, Number(body.rate_to_base), body.rate_date || getTodayIso());
+      logAudit(companyId, auth.user.id, "UPDATE_FX_RATE", "EXCHANGE_RATE", null, `Updated ${code} rate to ${body.rate_to_base} on ${body.rate_date || getTodayIso()}`);
       return NextResponse.json({ ok: true });
     }
 
     if (body.action === "add_user") {
-      const name = cleanText(body.name, 120);
-      const email = cleanEmail(body.email);
-      const password = typeof body.password === "string" ? body.password : "";
-      const passwordProblem = userPasswordProblem(password);
-      const roles = new Set(["admin", "accountant", "viewer"]);
-      if (!name || !email || passwordProblem || !roles.has(body.role || "accountant")) {
-        return NextResponse.json(
-          { error: passwordProblem || "Name, a valid email, and a password of at least 8 characters are required." },
-          { status: 400 }
-        );
-      }
-      const existing = db.prepare("SELECT id FROM users WHERE lower(email) = ?").get(email) as { id: number } | undefined;
-      if (existing) {
-        return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
-      }
-      const role = body.role || "accountant";
-      const res = db
-        .prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)")
-        .run(name, email, hashPassword(password), role);
-      const id = Number(res.lastInsertRowid);
-      db.prepare("INSERT INTO company_users (company_id, user_id, role) VALUES (?, ?, ?)").run(companyId, id, role);
-      logAudit(companyId, auth.user.id, "CREATE_USER", "USER", id, `Created user ${email} (${role})`);
-      return NextResponse.json({ id }, { status: 201 });
+      const added = addCompanyMember(db, companyId, body);
+      logAudit(
+        companyId,
+        auth.user.id,
+        added.invited ? "INVITE_USER" : "CREATE_USER",
+        "USER",
+        added.id,
+        added.invited ? `Invited existing user (${added.role})` : `Created user (${added.role})`
+      );
+      return NextResponse.json({ id: added.id, invited: added.invited }, { status: 201 });
     }
 
     if (body.action === "update_company") {

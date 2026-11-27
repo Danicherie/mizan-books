@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { computeFinancialStatements, getAccountBalances } from "@/lib/accounting";
 import { getCompanyRecord, requireAuth, resolveScopedCompanyId } from "@/lib/api-helpers";
+import { getTodayIso } from "@/lib/calendar";
+import { addIsoDays } from "@/lib/payables";
 import { fromMinor, INVOICE_MONEY_FIELDS, INVENTORY_MONEY_FIELDS, minorFromSql, withMajorMoney } from "@/lib/money";
 
 export async function GET(request: Request) {
@@ -83,6 +85,21 @@ export async function GET(request: Request) {
     .all(companyId) as Array<Record<string, unknown>>;
   const lowStock = lowStockItems.map((row) => withMajorMoney(row, INVENTORY_MONEY_FIELDS));
 
+  const today = getTodayIso();
+  const soon = addIsoDays(today, 7);
+  const dueSoonBills = (
+    db
+      .prepare(
+        `SELECT b.id, b.bill_number, b.due_date, b.currency_code, b.total, b.amount_paid, v.name AS vendor_name
+         FROM bills b
+         JOIN vendors v ON v.id = b.vendor_id AND v.company_id = b.company_id
+         WHERE b.company_id = ? AND b.total > b.amount_paid AND b.due_date >= ? AND b.due_date <= ?
+         ORDER BY b.due_date ASC
+         LIMIT 8`
+      )
+      .all(companyId, today, soon) as Array<Record<string, unknown>>
+  ).map((row) => withMajorMoney(row, ["total", "amount_paid"]));
+
   return NextResponse.json({
     company,
     kpis: {
@@ -99,5 +116,6 @@ export async function GET(request: Request) {
     recentJournals: recent,
     openInvoices: open,
     lowStockItems: lowStock,
+    dueSoonBills,
   });
 }

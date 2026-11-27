@@ -3,6 +3,7 @@
 import { localizeApiError } from "@/lib/i18n/errors";
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Building2, RefreshCw, Shield, Sparkles } from "lucide-react";
+import { getTodayIso } from "@/lib/calendar";
 import { evaluateSubscription } from "@/lib/subscription";
 import { SUPPORTED_CURRENCIES, TAX_REGIMES } from "@/lib/currency";
 import { currencyName, taxRegimeName } from "@/lib/i18n";
@@ -79,7 +80,7 @@ function SubscriptionPanel() {
 }
 
 export function SettingsModule() {
-  const { activeCompany, setActiveCompanyId, t, formatDt, isAdmin, canWrite, refreshSession, showToast } = useApp();
+  const { activeCompany, setActiveCompanyId, t, formatDt, isAdmin, canWrite, canKeepBooks, refreshSession, showToast } = useApp();
   const [subTab, setSubTab] = useState<"companies" | "subscription" | "fx" | "users" | "audit">("companies");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [rates, setRates] = useState<FxRate[]>([]);
@@ -90,6 +91,7 @@ export function SettingsModule() {
   const [openNewComp, setOpenNewComp] = useState(false);
   const [openNewUser, setOpenNewUser] = useState(false);
   const [rateEdits, setRateEdits] = useState<Record<string, string>>({});
+  const [rateDate, setRateDate] = useState(getTodayIso);
 
   const [compForm, setCompForm] = useState({
     name: "",
@@ -107,7 +109,7 @@ export function SettingsModule() {
     name: "",
     email: "",
     password: "",
-    role: "accountant" as "admin" | "accountant" | "viewer",
+    role: "accountant" as "admin" | "accountant" | "staff" | "viewer",
   });
 
   const load = useCallback(async () => {
@@ -177,6 +179,7 @@ export function SettingsModule() {
         companyId: activeCompany.id,
         currency_code: code,
         rate_to_base: parseFloat(rateEdits[code]),
+        rate_date: rateDate,
       }),
     });
     if (!res.ok) {
@@ -244,7 +247,9 @@ export function SettingsModule() {
             ["users", t.settings.usersTab],
             ["audit", t.settings.auditLogTab],
           ] as const
-        ).map(([k, label]) => (
+        )
+          .filter(([k]) => k !== "audit" || canKeepBooks)
+          .map(([k, label]) => (
           <button
             key={k}
             type="button"
@@ -314,8 +319,19 @@ export function SettingsModule() {
         <SubscriptionPanel />
       ) : subTab === "fx" ? (
         <Card className="overflow-hidden">
-          <div className="p-4 border-b border-mb-line bg-mb-beige text-xs font-semibold text-mb-ink">
-            {t.settings.baseCurrency}: <strong className="text-mb-cocoa">{activeCompany?.base_currency}</strong>
+          <div className="p-4 border-b border-mb-line bg-mb-beige text-xs font-semibold text-mb-ink flex flex-wrap items-center gap-3">
+            <span>
+              {t.settings.baseCurrency}: <strong className="text-mb-cocoa">{activeCompany?.base_currency}</strong>
+            </span>
+            <label className="inline-flex items-center gap-2 font-medium text-mb-ink">
+              <span>{t.settings.rateDate}</span>
+              <input
+                type="date"
+                value={rateDate}
+                onChange={(e) => setRateDate(e.target.value)}
+                className="px-2 py-1 rounded-lg border border-mb-line bg-mb-paper text-mb-cocoa"
+              />
+            </label>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -334,14 +350,14 @@ export function SettingsModule() {
                       <input
                         type="number"
                         step="0.0001"
-                        disabled={!canWrite || r.currency_code === activeCompany?.base_currency}
+                        disabled={!isAdmin || r.currency_code === activeCompany?.base_currency}
                         value={rateEdits[r.currency_code] ?? r.rate_to_base}
                         onChange={(e) => setRateEdits({ ...rateEdits, [r.currency_code]: e.target.value })}
                         className="w-40 px-3 py-1.5 rounded-xl border border-mb-line text-sm tabular-nums disabled:bg-mb-beige"
                       />
                     </td>
                     <td className="px-4 py-3 text-end">
-                      {canWrite && r.currency_code !== activeCompany?.base_currency && (
+                      {isAdmin && r.currency_code !== activeCompany?.base_currency && (
                         <button
                           type="button"
                           onClick={() => handleUpdateRate(r.currency_code)}
@@ -378,7 +394,7 @@ export function SettingsModule() {
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-mb-cream text-mb-ink border border-mb-line">
                         <Shield className="w-3 h-3" />
-                        {u.role === "admin" ? t.topbar.roleAdmin : u.role === "accountant" ? t.topbar.roleAccountant : t.topbar.roleViewer}
+                        {u.role === "admin" ? t.topbar.roleAdmin : u.role === "accountant" ? t.topbar.roleAccountant : u.role === "staff" ? t.topbar.roleStaff : t.topbar.roleViewer}
                       </span>
                     </td>
                     <td className="px-4 py-3 uppercase text-xs font-mono text-mb-ink">{u.preferred_lang}</td>
@@ -491,14 +507,16 @@ export function SettingsModule() {
             <input type="email" required value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.password} *</label>
-            <input type="password" required minLength={8} placeholder={t.auth.passwordHint} value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
+            <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.password}</label>
+            <input type="password" minLength={8} placeholder={t.auth.passwordHint} value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm" />
+            <p className="text-xs text-mb-ink/70 mt-1">{t.settings.inviteHint}</p>
           </div>
           <div>
             <label className="block text-xs font-semibold text-mb-ink mb-1">{t.settings.role}</label>
-            <select value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as "admin" | "accountant" | "viewer" })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
+            <select value={userForm.role} onChange={(e) => setUserForm({ ...userForm, role: e.target.value as "admin" | "accountant" | "staff" | "viewer" })} className="w-full px-3 py-2 rounded-xl border border-mb-line text-sm bg-mb-paper">
               <option value="admin">{t.topbar.roleAdmin}</option>
               <option value="accountant">{t.topbar.roleAccountant}</option>
+              <option value="staff">{t.topbar.roleStaff}</option>
               <option value="viewer">{t.topbar.roleViewer}</option>
             </select>
           </div>

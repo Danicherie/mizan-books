@@ -10,6 +10,7 @@ const STATIC_KEYS = [
   "emailExists",
   "readOnly",
   "adminRequired",
+  "booksRoleRequired",
   "noCompanyAccess",
   "noCompany",
   "forbidden",

@@ -55,7 +55,7 @@ The first time the app opens an empty database it may create that administrator,
 
 3. Put Caddy or Nginx with a certificate in front of port 3000. Then set `COOKIE_SECURE=true` and restart.
 
-The `mizan-backup` service takes a consistent copy of the database once a day into the `mizan_backups` volume and deletes copies older than `BACKUP_RETENTION_DAYS`. It uses SQLite's online backup (`VACUUM INTO`), so the copy is a complete committed snapshot even while someone is entering invoices. Run only one copy of the app against the same database file.
+The `mizan-backup` service takes a consistent copy of the database once a day into the `mizan_backups` volume and deletes copies older than `BACKUP_RETENTION_DAYS`. It uses SQLite's online backup (`VACUUM INTO`), so the copy is a complete committed snapshot even while someone is entering invoices. The same job copies `data/receipts` into a `receipts-<timestamp>` folder beside that database file, and deletes those folders on the same schedule. Run only one copy of the app against the same database file.
 
 To take a copy by hand inside the app container:
 

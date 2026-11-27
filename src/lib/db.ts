@@ -226,6 +226,17 @@ export const STANDARD_COA: DefaultAccountDef[] = [
     subtype: "SERVICE_REVENUE",
     normal_balance: "CREDIT",
   },
+  {
+    code: "4200",
+    name: "Foreign Exchange Gain / Loss",
+    name_am: "የውጭ ምንዛሬ ትርፍ / ኪሳራ",
+    name_om: "Bu'aa / Kasaaraa Sarjaa Ala",
+    name_so: "Faa'iido / Khasaaro Sarifka Dibadda",
+    name_ar: "أرباح / خسائر صرف العملات",
+    type: "REVENUE",
+    subtype: "FX",
+    normal_balance: "CREDIT",
+  },
   // Expenses
   {
     code: "5000",
@@ -328,16 +339,22 @@ export function seedCompanyExchangeRates(db: DatabaseSync, companyId: number, ba
     SAR: 3.75,
     AED: 3.6725,
     EUR: 0.92,
+    GBP: 0.79,
   };
   const basePerUsd = ratesToUsd[baseCurrency] ?? 1;
   const stmt = db.prepare(`
     INSERT INTO exchange_rates (company_id, currency_code, rate_to_base, updated_at)
     VALUES (?, ?, ?, datetime('now'))
   `);
+  const history = db.prepare(`
+    INSERT INTO exchange_rate_history (company_id, currency_code, rate_date, rate_to_base)
+    VALUES (?, ?, date('now'), ?)
+  `);
   for (const [code, perUsd] of Object.entries(ratesToUsd)) {
     // 1 unit of `code` in `baseCurrency` = basePerUsd / perUsd
     const rateToBase = code === baseCurrency ? 1 : Number((basePerUsd / perUsd).toFixed(4));
     stmt.run(companyId, code, rateToBase);
+    history.run(companyId, code, rateToBase);
   }
 }
 
@@ -387,6 +404,16 @@ function initSchema(db: DatabaseSync) {
       rate_to_base REAL NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(company_id, currency_code),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS exchange_rate_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      currency_code TEXT NOT NULL,
+      rate_date TEXT NOT NULL,
+      rate_to_base REAL NOT NULL,
+      UNIQUE(company_id, currency_code, rate_date),
       FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
     );
 
@@ -635,9 +662,93 @@ function initSchema(db: DatabaseSync) {
       FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS bank_statements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      account_id INTEGER NOT NULL,
+      statement_date TEXT NOT NULL,
+      description TEXT NOT NULL,
+      reference TEXT NOT NULL DEFAULT '',
+      amount INTEGER NOT NULL,
+      matched_journal_line_id INTEGER,
+      status TEXT NOT NULL DEFAULT 'UNMATCHED',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS budgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      account_id INTEGER NOT NULL,
+      period_month TEXT NOT NULL,
+      budget_amount INTEGER NOT NULL DEFAULT 0,
+      notes TEXT NOT NULL DEFAULT '',
+      UNIQUE(company_id, account_id, period_month),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS pos_sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      receipt_number TEXT NOT NULL,
+      sale_date TEXT NOT NULL,
+      customer_name TEXT NOT NULL DEFAULT 'Walk-in Customer',
+      payment_method TEXT NOT NULL DEFAULT 'CASH',
+      subtotal INTEGER NOT NULL DEFAULT 0,
+      vat_rate REAL NOT NULL DEFAULT 15,
+      vat_amount INTEGER NOT NULL DEFAULT 0,
+      total INTEGER NOT NULL DEFAULT 0,
+      journal_entry_id INTEGER,
+      created_by INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS pos_sale_lines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pos_sale_id INTEGER NOT NULL,
+      item_id INTEGER,
+      description TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      unit_price INTEGER NOT NULL DEFAULT 0,
+      line_total INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (pos_sale_id) REFERENCES pos_sales(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS payment_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      provider TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      reference_id INTEGER,
+      tx_ref TEXT NOT NULL UNIQUE,
+      currency_code TEXT NOT NULL DEFAULT 'ETB',
+      amount INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      checkout_url TEXT NOT NULL DEFAULT '',
+      mode TEXT NOT NULL DEFAULT 'SANDBOX',
+      meta_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS notification_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_id INTEGER NOT NULL,
+      channel TEXT NOT NULL,
+      recipient TEXT NOT NULL,
+      entity_type TEXT NOT NULL DEFAULT 'INVOICE',
+      entity_id INTEGER,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'SIMULATED',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    );
   `);
 
-  // Safe migration for existing SQLite databases created before trial/subscription columns
+  // Safe migration for existing SQLite databases created before trial/subscription/alert/receipt columns
   const cols = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
   const colNames = new Set(cols.map((c) => c.name));
   if (!colNames.has("plan_name")) {
@@ -653,6 +764,62 @@ function initSchema(db: DatabaseSync) {
   if (!colNames.has("trial_ends_at")) {
     db.exec("ALTER TABLE companies ADD COLUMN trial_ends_at TEXT NOT NULL DEFAULT ''");
     db.exec("UPDATE companies SET trial_ends_at = datetime('now', '+30 days') WHERE trial_ends_at = ''");
+  }
+  if (!colNames.has("telegram_chat_id")) {
+    db.exec("ALTER TABLE companies ADD COLUMN telegram_chat_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!colNames.has("sms_sender_id")) {
+    db.exec("ALTER TABLE companies ADD COLUMN sms_sender_id TEXT NOT NULL DEFAULT 'MizanBooks'");
+  }
+
+  const billCols = db.prepare("PRAGMA table_info(bills)").all() as Array<{ name: string }>;
+  if (!billCols.some((c) => c.name === "receipt_filename")) {
+    db.exec("ALTER TABLE bills ADD COLUMN receipt_filename TEXT NOT NULL DEFAULT ''");
+  }
+
+  // Seed sample budgets & bank statement rows for demo company #1 if empty
+  const demoComp = db.prepare("SELECT id FROM companies WHERE name = 'Addis Horizon Trading PLC' LIMIT 1").get() as
+    | { id: number }
+    | undefined;
+  if (demoComp) {
+    const bCount = (db.prepare("SELECT COUNT(*) as c FROM budgets WHERE company_id = ?").get(demoComp.id) as { c: number }).c;
+    if (bCount === 0) {
+      const acctRows = db
+        .prepare("SELECT id, code FROM accounts WHERE company_id = ? AND code IN ('4000','4100','5000','6000','6100','6200','6300')")
+        .all(demoComp.id) as Array<{ id: number; code: string }>;
+      const byCode = Object.fromEntries(acctRows.map((a) => [a.code, a.id]));
+      const monthKey = new Date().toISOString().slice(0, 7);
+      const insB = db.prepare("INSERT OR IGNORE INTO budgets (company_id, account_id, period_month, budget_amount, notes) VALUES (?, ?, ?, ?, ?)");
+      const defaults: Array<[string, number, string]> = [
+        ["4000", 85000000, "Monthly product sales target"],
+        ["4100", 22000000, "ERP & advisory services target"],
+        ["5000", 48000000, "Estimated cost of sales"],
+        ["6000", 13000000, "Monthly payroll budget"],
+        ["6100", 7000000, "HQ office rent & facilities"],
+        ["6200", 3500000, "Fiber internet & telecom"],
+        ["6300", 10000000, "Freight & customs corridor"],
+      ];
+      for (const [code, amt, note] of defaults) {
+        if (byCode[code]) insB.run(demoComp.id, byCode[code], monthKey, amt, note);
+      }
+    }
+
+    const bsCount = (db.prepare("SELECT COUNT(*) as c FROM bank_statements WHERE company_id = ?").get(demoComp.id) as { c: number }).c;
+    if (bsCount === 0) {
+      const bankAcc = db
+        .prepare("SELECT id FROM accounts WHERE company_id = ? AND code = '1010' LIMIT 1")
+        .get(demoComp.id) as { id: number } | undefined;
+      if (bankAcc) {
+        const insStmt = db.prepare(`
+          INSERT INTO bank_statements (company_id, account_id, statement_date, description, reference, amount, status)
+          VALUES (?, ?, ?, ?, ?, ?, 'UNMATCHED')
+        `);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-09-25", "CBE Transfer - Awash Specialty Coffee", "PAY-INV-001", 59890000);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-10-15", "RTGS Outgoing - Bole Business Tower", "PAY-BILL-001", -13560000);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-10-18", "CBE Deposit - Oromia Tech Partial", "PAY-INV-002", 25000000);
+        insStmt.run(demoComp.id, bankAcc.id, "2026-10-31", "Monthly Bank Maintenance & SMS Fee", "BANK-FEE-10", -45000);
+      }
+    }
   }
 
   // Backfill company_users memberships for existing databases cleanly
@@ -1285,6 +1452,66 @@ export function resetDbForTests(): void {
   }
 }
 
+const SAMPLE_RATES_TO_USD: Record<string, number> = {
+  USD: 1,
+  ETB: 124.5,
+  SOS: 571.0,
+  KES: 129.2,
+  SAR: 3.75,
+  AED: 3.6725,
+  EUR: 0.92,
+  GBP: 0.79,
+};
+
+/** Add the FX account, pound sterling, and a dated copy of each saved rate on databases that already exist. */
+function ensureFinanceExtras(db: DatabaseSync) {
+  const companyCols = db.prepare("PRAGMA table_info(companies)").all() as Array<{ name: string }>;
+  if (!companyCols.some((col) => col.name === "base_currency")) return;
+  const accountsReady = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'accounts'").get();
+  if (!accountsReady) return;
+  const fx = STANDARD_COA.find((account) => account.code === "4200");
+  const companies = db.prepare("SELECT id, base_currency FROM companies").all() as Array<{ id: number; base_currency: string }>;
+  const hasAccount = db.prepare("SELECT 1 AS ok FROM accounts WHERE company_id = ? AND code = ?");
+  const insertAccount = db.prepare(`
+    INSERT INTO accounts (company_id, code, name, name_am, name_om, name_so, name_ar, type, subtype, normal_balance, is_system, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+  `);
+  const hasRate = db.prepare("SELECT 1 AS ok FROM exchange_rates WHERE company_id = ? AND currency_code = ?");
+  const insertRate = db.prepare(`
+    INSERT INTO exchange_rates (company_id, currency_code, rate_to_base, updated_at)
+    VALUES (?, ?, ?, datetime('now'))
+  `);
+  for (const company of companies) {
+    if (fx && !hasAccount.get(company.id, fx.code)) {
+      insertAccount.run(
+        company.id,
+        fx.code,
+        fx.name,
+        fx.name_am,
+        fx.name_om,
+        fx.name_so,
+        fx.name_ar,
+        fx.type,
+        fx.subtype,
+        fx.normal_balance
+      );
+    }
+    const basePerUsd = SAMPLE_RATES_TO_USD[company.base_currency] ?? 1;
+    for (const [code, perUsd] of Object.entries(SAMPLE_RATES_TO_USD)) {
+      if (hasRate.get(company.id, code)) continue;
+      const rateToBase = code === company.base_currency ? 1 : Number((basePerUsd / perUsd).toFixed(4));
+      insertRate.run(company.id, code, rateToBase);
+    }
+  }
+  db.exec(`
+    INSERT OR IGNORE INTO exchange_rate_history (company_id, currency_code, rate_date, rate_to_base)
+    SELECT company_id, currency_code,
+      CASE WHEN length(updated_at) >= 10 THEN substr(updated_at, 1, 10) ELSE date('now') END,
+      rate_to_base
+    FROM exchange_rates
+  `);
+}
+
 export function getDb(): DatabaseSync {
   if (_db) return _db;
   const dataDir = process.env.DATA_DIR || path.join(process.cwd(), "data");
@@ -1297,6 +1524,7 @@ export function getDb(): DatabaseSync {
     initSchema(db);
     migrateMoneyToMinorUnits(db);
     bootstrapDatabase(db);
+    ensureFinanceExtras(db);
   } catch (err) {
     db.close();
     throw err;

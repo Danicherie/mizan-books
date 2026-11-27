@@ -4,7 +4,8 @@ import { getAccountByCode, postJournalEntry } from "@/lib/accounting";
 import { getCompanyRecord, guardCompanyMutation, requireWrite, userHasCompanyAccess } from "@/lib/api-helpers";
 import { clientErrorResponse } from "@/lib/http";
 import { assertMutationOrigin } from "@/lib/origin";
-import { fromMinor, minorFromSql, mulMinor, toMinor } from "@/lib/money";
+import { customerReceiptLines, rateToBaseOn } from "@/lib/fx";
+import { fromMinor, minorFromSql, toMinor } from "@/lib/money";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const originBlock = assertMutationOrigin(request);
@@ -51,10 +52,14 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: `Payment must be between 0 and ${fromMinor(remaining)}` }, { status: 400 });
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.payment_date || "")) {
+      return NextResponse.json({ error: "Choose a valid payment date." }, { status: 400 });
+    }
     const company = getCompanyRecord(inv.company_id);
     const depositAcctId = body.account_id || getAccountByCode(inv.company_id, "1010").id;
     const arAcctId = getAccountByCode(inv.company_id, "1100").id;
-    const basePayAmount = mulMinor(payAmount, inv.exchange_rate);
+    const fxAcctId = getAccountByCode(inv.company_id, "4200").id;
+    const payRate = rateToBaseOn(inv.company_id, inv.currency_code, company.base_currency, body.payment_date);
 
     const jeId = postJournalEntry({
       company_id: inv.company_id,
@@ -65,10 +70,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       source_id: inv.id,
       created_by: auth.user.id,
       currency_code: company.base_currency,
-      lines: [
-        { account_id: depositAcctId, description: `Deposit for ${inv.invoice_number}`, debit: fromMinor(basePayAmount), credit: 0 },
-        { account_id: arAcctId, description: `Clear AR ${inv.invoice_number}`, debit: 0, credit: fromMinor(basePayAmount) },
-      ],
+      lines: customerReceiptLines({
+        foreignMinor: payAmount,
+        bookedRate: inv.exchange_rate,
+        payRate,
+        bankAccountId: depositAcctId,
+        arAccountId: arAcctId,
+        fxAccountId: fxAcctId,
+        description: `Customer payment ${inv.invoice_number}`,
+      }),
     });
 
     const newPaid = paidMinor + payAmount;

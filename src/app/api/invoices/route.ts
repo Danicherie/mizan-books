@@ -4,6 +4,7 @@ import { getAccountByCode, nextSequenceNumber, postJournalEntry, type JournalLin
 import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
 import { clientErrorResponse } from "@/lib/http";
 import { assertMutationOrigin } from "@/lib/origin";
+import { resolveDocumentRate } from "@/lib/fx";
 import {
   fromMinor,
   INVOICE_LINE_MONEY_FIELDS,
@@ -81,14 +82,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
-    const currencyCode = body.currency_code || company.base_currency;
-    let exchangeRate = Number(body.exchange_rate || 0);
-    if (!exchangeRate || currencyCode === company.base_currency) {
-      const rateRow = db
-        .prepare("SELECT rate_to_base FROM exchange_rates WHERE company_id = ? AND currency_code = ?")
-        .get(companyId, currencyCode) as { rate_to_base: number } | undefined;
-      exchangeRate = currencyCode === company.base_currency ? 1 : rateRow?.rate_to_base ?? 1;
-    }
+    const currencyCode = (body.currency_code || company.base_currency).toUpperCase();
+    const exchangeRate = resolveDocumentRate(companyId, company.base_currency, currencyCode, body.issue_date, body.exchange_rate);
 
     let subtotalMinor = 0;
     const pricedLines = body.lines.map((line) => {

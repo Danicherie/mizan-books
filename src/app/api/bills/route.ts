@@ -3,11 +3,15 @@ import { getDb, logAudit } from "@/lib/db";
 import { getAccountByCode, nextSequenceNumber, postJournalEntry, type JournalLineInput } from "@/lib/accounting";
 import { getCompanyRecord, guardCompanyMutation, requireAuth, requireWrite, resolveScopedCompanyId } from "@/lib/api-helpers";
 import { clientErrorResponse } from "@/lib/http";
+import { getTodayIso } from "@/lib/calendar";
+import { resolveDocumentRate } from "@/lib/fx";
 import { assertMutationOrigin } from "@/lib/origin";
+import { agedPayables } from "@/lib/payables";
 import {
   BILL_LINE_MONEY_FIELDS,
   fromMinor,
   INVOICE_MONEY_FIELDS,
+  minorFromSql,
   mulMinor,
   percentOfMinor,
   toMinor,
@@ -42,7 +46,25 @@ export async function GET(request: Request) {
     ),
   }));
 
-  return NextResponse.json({ bills: hydrated });
+  const today = getTodayIso();
+  const agingMinor = agedPayables(
+    bills.map((bill) => ({
+      due_date: String(bill.due_date),
+      total: minorFromSql(bill.total),
+      amount_paid: minorFromSql(bill.amount_paid),
+      exchange_rate: Number(bill.exchange_rate ?? 1),
+    })),
+    today
+  );
+  const aging = {
+    current: fromMinor(agingMinor.current),
+    d1_30: fromMinor(agingMinor.d1_30),
+    d31_60: fromMinor(agingMinor.d31_60),
+    d61_90: fromMinor(agingMinor.d61_90),
+    d90: fromMinor(agingMinor.d90),
+  };
+
+  return NextResponse.json({ bills: hydrated, aging });
 }
 
 export async function POST(request: Request) {
@@ -82,14 +104,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
-    const currencyCode = body.currency_code || company.base_currency;
-    let exchangeRate = Number(body.exchange_rate || 0);
-    if (!exchangeRate || currencyCode === company.base_currency) {
-      const rateRow = db
-        .prepare("SELECT rate_to_base FROM exchange_rates WHERE company_id = ? AND currency_code = ?")
-        .get(companyId, currencyCode) as { rate_to_base: number } | undefined;
-      exchangeRate = currencyCode === company.base_currency ? 1 : rateRow?.rate_to_base ?? 1;
-    }
+    const currencyCode = (body.currency_code || company.base_currency).toUpperCase();
+    const exchangeRate = resolveDocumentRate(companyId, company.base_currency, currencyCode, body.issue_date, body.exchange_rate);
 
     let subtotalMinor = 0;
     const pricedLines = body.lines.map((line) => {

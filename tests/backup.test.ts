@@ -19,9 +19,13 @@ test("online backup is a consistent snapshot and old copies are removed", () => 
   live.exec("INSERT INTO marks VALUES (1)");
   live.exec("COMMIT");
 
+  fs.mkdirSync(path.join(dataDir, "receipts"));
+  fs.writeFileSync(path.join(dataDir, "receipts", "c1-b1-abcdefabcdef.jpg"), "photo");
   live.exec("BEGIN");
   live.exec("INSERT INTO marks VALUES (99)");
   const first = backupSqliteDatabase({ dataDir, backupDir, retentionDays: 14 });
+  assert.ok(first.receiptsPath);
+  assert.equal(fs.readFileSync(path.join(first.receiptsPath, "c1-b1-abcdefabcdef.jpg"), "utf8"), "photo");
   live.exec("ROLLBACK");
 
   const snapshot = new DatabaseSync(first.backupPath, { readOnly: true });
@@ -45,11 +49,15 @@ test("online backup is a consistent snapshot and old copies are removed", () => 
 
   const stale = path.join(backupDir, "mizan-2000-01-01T00-00-00-000Z.db");
   fs.writeFileSync(stale, "old");
+  const staleReceipts = path.join(backupDir, "receipts-2000-01-01T00-00-00-000Z");
+  fs.mkdirSync(staleReceipts);
   const longAgo = new Date("2000-01-01T00:00:00Z");
   fs.utimesSync(stale, longAgo, longAgo);
+  fs.utimesSync(staleReceipts, longAgo, longAgo);
   const removed = pruneOldBackups(backupDir, 14, new Date("2026-11-25T00:00:00Z"));
-  assert.equal(removed.length, 1);
+  assert.equal(removed.length, 2);
   assert.equal(fs.existsSync(stale), false);
+  assert.equal(fs.existsSync(staleReceipts), false);
   assert.equal(fs.existsSync(second.backupPath), true);
 
   fs.rmSync(dir, { recursive: true, force: true });

@@ -4,7 +4,8 @@ import { getAccountByCode, postJournalEntry } from "@/lib/accounting";
 import { getCompanyRecord, guardCompanyMutation, requireWrite, userHasCompanyAccess } from "@/lib/api-helpers";
 import { clientErrorResponse } from "@/lib/http";
 import { assertMutationOrigin } from "@/lib/origin";
-import { fromMinor, minorFromSql, mulMinor, toMinor } from "@/lib/money";
+import { rateToBaseOn, supplierPaymentLines } from "@/lib/fx";
+import { fromMinor, minorFromSql, toMinor } from "@/lib/money";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const originBlock = assertMutationOrigin(request);
@@ -50,10 +51,14 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: `Payment must be between 0 and ${fromMinor(remaining)}` }, { status: 400 });
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.payment_date || "")) {
+      return NextResponse.json({ error: "Choose a valid payment date." }, { status: 400 });
+    }
     const company = getCompanyRecord(bill.company_id);
     const cashAcctId = body.account_id || getAccountByCode(bill.company_id, "1010").id;
     const apAcctId = getAccountByCode(bill.company_id, "2000").id;
-    const basePay = mulMinor(payAmount, bill.exchange_rate);
+    const fxAcctId = getAccountByCode(bill.company_id, "4200").id;
+    const payRate = rateToBaseOn(bill.company_id, bill.currency_code, company.base_currency, body.payment_date);
 
     const jeId = postJournalEntry({
       company_id: bill.company_id,
@@ -64,10 +69,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       source_id: bill.id,
       created_by: auth.user.id,
       currency_code: company.base_currency,
-      lines: [
-        { account_id: apAcctId, description: `Clear AP ${bill.bill_number}`, debit: fromMinor(basePay), credit: 0 },
-        { account_id: cashAcctId, description: `Bank payment ${bill.bill_number}`, debit: 0, credit: fromMinor(basePay) },
-      ],
+      lines: supplierPaymentLines({
+        foreignMinor: payAmount,
+        bookedRate: bill.exchange_rate,
+        payRate,
+        bankAccountId: cashAcctId,
+        apAccountId: apAcctId,
+        fxAccountId: fxAcctId,
+        description: `Vendor payment ${bill.bill_number}`,
+      }),
     });
 
     const newPaid = paidMinor + payAmount;
